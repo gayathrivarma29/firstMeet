@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="homePage.css">
+</head>
+
+<body>
+
+    <div class="page">
+
+        <!-- New Meeting Button -->
+        <button class="meeting-btn" onclick="window.location.href='meetingPage.html'">+ New Meeting</button>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTasks()">Tasks</button>
+            <button class="tab" onclick="showHistory()">History</button>
+        </div>
+
+        <!-- Tasks Content (Default Visible) -->
+        <div id="tasks" class="content">
+            <div class="task-split">
+                <div class="task-box">
+                    <h3>Tasks Assigned To You</h3>
+                    <p>No tasks yet.</p>
+                </div>
+
+                <div class="task-box">
+                    <h3>Tasks You Have To Assign</h3>
+                    <p>No tasks yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Content -->
+        <div id="history" class="content hidden">
+            <p>No history available.</p>
+        </div>
+
+    </div>
+
+    <script>
+        function showTasks() {
+            document.getElementById("tasks").classList.remove("hidden");
+            document.getElementById("history").classList.add("hidden");
+
+            document.querySelectorAll(".tab")[0].classList.add("active");
+            document.querySelectorAll(".tab")[1].classList.remove("active");
+        }
+
+        function showHistory() {
+            document.getElementById("history").classList.remove("hidden");
+            document.getElementById("tasks").classList.add("hidden");
+
+            document.querySelectorAll(".tab")[1].classList.add("active");
+            document.querySelectorAll(".tab")[0].classList.remove("active");
+        }
+    </script>
+
+</body>
+
+</html>

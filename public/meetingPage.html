@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Meeting MOM</title>
+    <link rel="stylesheet" href="newMeeting.css">
+    <script src="newMeeting.js" defer></script>
+</head>
+
+<body>
+
+    <div class="page">
+
+        <header class="header">
+            <h1>Meeting Minutes Generator</h1>
+            <p>Upload your transcript and generate structured meeting minutes</p>
+        </header>
+
+        <section class="card">
+            <form>
+                <div class="form-group">
+                    <label>Meeting Title</label>
+                    <input type="text" id="meetingTitle" placeholder="Enter meeting title">
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Transcript</label>
+                    <input type="file" id="WordDoc" accept=".txt,.pdf,.docx">
+                </div>
+
+                <button type="button" onclick="onSubmit()">Generate Minutes</button>
+            </form>
+        </section>
+
+        <!-- Hidden Results Section -->
+        <section id="resultSection" class="results" style="display: none;">
+
+            <div class="result-card">
+                <h2>Summary</h2>
+                <div id="summary" class="result-content"></div>
+            </div>
+
+            <div class="result-card">
+                <h2>Action Items</h2>
+                <div id="actionList" class="result-content"></div>
+            </div>
+
+        </section>
+
+    </div>
+
+</body>
+
+</html>

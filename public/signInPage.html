@@ -1,0 +1,40 @@
+<html>
+
+<head>
+    <title>Sign In</title>
+    <link rel="stylesheet" href="signInPage.css">
+    <script src="signInPage.js"></script>
+</head>
+
+<body>
+    <div class="page">
+        <header class="header">
+            <h1>Sign In</h1>
+            <p>Welcome back to Meeting Minutes Generator</p>
+        </header>
+
+        <section class="card">
+            <form>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" name="firstName">
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" name="lastName">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password">
+                </div>
+                <button type="button" onclick="submitSignIn()">Sign In</button>
+            </form>
+        </section>
+    </div>
+</body>
+
+</html>
