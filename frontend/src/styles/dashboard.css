@@ -275,3 +275,200 @@
     margin-top: 0.25rem;
     font-weight: 400;
 }
+
+/* ─── HEADER ROW ─── */
+.dashboard-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* ─── VIEW TOGGLE (admin: Team ↔ My View) ─── */
+.view-toggle {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.25rem;
+}
+
+.view-toggle-btn {
+    padding: 0.3rem 0.9rem;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.view-toggle-btn:hover { color: var(--text-main); }
+
+.view-toggle-btn.active {
+    background: #0D99FF;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 6px rgba(13,153,255,0.35);
+}
+
+/* ─── DATE RANGE CONTROL ─── */
+.range-control {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.25rem;
+}
+
+.range-btn {
+    padding: 0.3rem 0.75rem;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.range-btn:hover { color: var(--text-main); }
+
+.range-btn.active {
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+/* ─── AI DIGEST CARD ─── */
+.digest-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-card);
+    flex-wrap: wrap;
+    animation: fadeUp 0.35s ease both;
+    animation-delay: 0.02s;
+}
+
+.digest-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.digest-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+.digest-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+}
+
+.digest-text {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.digest-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--secondary-bg);
+    color: var(--text-main);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    flex-shrink: 0;
+}
+.digest-btn:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+.digest-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.digest-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* ─── KPI BADGE (monthly growth) ─── */
+.kpi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+}
+
+/* ─── MEETING HISTORY (dashboard widget) ─── */
+.meeting-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.meeting-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    gap: 0.5rem;
+}
+.meeting-history-item:hover {
+    transform: translateX(3px);
+    border-color: var(--accent-color);
+}
+
+.note-badge {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+

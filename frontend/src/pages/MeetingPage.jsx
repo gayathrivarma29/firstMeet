@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import api from '../api';
 import MainLayout from '../components/MainLayout';
 import '../styles/homePage.css';
@@ -11,7 +12,6 @@ const MeetingPage = () => {
     const [actionItems, setActionItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showResults, setShowResults] = useState(false);
-    const navigate = useNavigate();
 
     // ── Recording state ──
     const [isRecording, setIsRecording]       = useState(false);
@@ -21,6 +21,62 @@ const MeetingPage = () => {
     const recognitionRef     = useRef(null);
     const timerRef           = useRef(null);
     const finalTranscriptRef = useRef('');
+
+    // ── Meeting history + notepad state ──
+    const [meetingHistory, setMeetingHistory]     = useState([]);
+    const [selectedMeeting, setSelectedMeeting]   = useState(null);
+    const [noteContent, setNoteContent]           = useState('');
+    const [notePreview, setNotePreview]           = useState(false);
+    const [noteSaving, setNoteSaving]             = useState(false);
+    const [noteSaved, setNoteSaved]               = useState(false);
+    const noteSaveTimer                           = useRef(null);
+    const userName = localStorage.getItem('userName');
+
+    // Fetch meeting history on mount
+    useEffect(() => {
+        if (!userName) return;
+        api.get(`/api/meetings/${encodeURIComponent(userName)}`)
+            .then(res => setMeetingHistory(res.data || []))
+            .catch(() => {});
+    }, [userName]);
+
+    // Open a meeting and load its personal note
+    const openMeeting = useCallback(async (meeting) => {
+        setSelectedMeeting(meeting);
+        setNotePreview(false);
+        setNoteSaved(false);
+        try {
+            const res = await api.get(`/api/meetings/${meeting._id}/notes?userName=${encodeURIComponent(userName)}`);
+            setNoteContent(res.data.content || '');
+        } catch {
+            setNoteContent('');
+        }
+    }, [userName]);
+
+    const closeMeetingModal = () => {
+        setSelectedMeeting(null);
+        setNoteContent('');
+        setNotePreview(false);
+    };
+
+    // Auto-save with 800ms debounce
+    const handleNoteChange = (val) => {
+        setNoteContent(val);
+        setNoteSaved(false);
+        clearTimeout(noteSaveTimer.current);
+        noteSaveTimer.current = setTimeout(async () => {
+            if (!selectedMeeting) return;
+            setNoteSaving(true);
+            try {
+                await api.put(`/api/meetings/${selectedMeeting._id}/notes`, { userName, content: val });
+                setNoteSaved(true);
+                // Refresh history to update hasNote flag
+                const res = await api.get(`/api/meetings/${encodeURIComponent(userName)}`);
+                setMeetingHistory(res.data || []);
+            } catch {}
+            setNoteSaving(false);
+        }, 800);
+    };
 
     const onSubmit = async (fileOverride = null) => {
         const activeFile = fileOverride || file;
@@ -394,6 +450,117 @@ const MeetingPage = () => {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Meeting History ── */}
+                {meetingHistory.length > 0 && (
+                    <div className="task-box glass-card" style={{ marginTop: '2rem' }}>
+                        <h3 style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem', marginBottom: '1.25rem', color: 'var(--accent-color)' }}>
+                            📋 Meeting History
+                        </h3>
+                        <div className="meeting-history-list">
+                            {meetingHistory.map(m => (
+                                <div key={m._id} className="meeting-history-row" onClick={() => openMeeting(m)} role="button">
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div className="urgent-task-title" style={{ marginBottom: '0.2rem' }}>{m.title}</div>
+                                        <div className="urgent-task-meta">
+                                            {(m.actionItems || []).length} action items · {new Date(m.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                                        {(m.notes || []).some(n => n.userName === userName && n.content?.trim()) && (
+                                            <span className="note-badge" title="Has your notes">📝</span>
+                                        )}
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Open →</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Meeting Detail Modal ── */}
+                {selectedMeeting && (
+                    <div className="notepad-overlay" onClick={closeMeetingModal}>
+                        <div className="notepad-modal" onClick={e => e.stopPropagation()}>
+                            {/* Modal Header */}
+                            <div className="notepad-modal-header">
+                                <div>
+                                    <h2 className="notepad-modal-title">{selectedMeeting.title}</h2>
+                                    <span className="urgent-task-meta">{new Date(selectedMeeting.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                </div>
+                                <button className="notepad-close-btn" onClick={closeMeetingModal}>✕</button>
+                            </div>
+
+                            {/* Two-column body */}
+                            <div className="notepad-modal-body">
+                                {/* Left: Summary + Action Items */}
+                                <div className="notepad-summary-col">
+                                    <h4 className="notepad-section-label">Summary</h4>
+                                    <div className="notepad-summary-text">
+                                        {selectedMeeting.summary || <span style={{ color: 'var(--text-muted)' }}>No summary recorded.</span>}
+                                    </div>
+
+                                    {(selectedMeeting.actionItems || []).length > 0 && (
+                                        <>
+                                            <h4 className="notepad-section-label" style={{ marginTop: '1.25rem' }}>Action Items</h4>
+                                            <ul className="notepad-action-list">
+                                                {selectedMeeting.actionItems.map((item, i) => (
+                                                    <li key={i} className="notepad-action-item">
+                                                        <span className="notepad-action-title">{item.title || item.task}</span>
+                                                        {item.assignedTo && (
+                                                            <span className="notepad-action-meta"> → {item.assignedTo}</span>
+                                                        )}
+                                                        {item.priority && (
+                                                            <span className={`priority-tag ${(item.priority || '').toLowerCase()}`} style={{ marginLeft: '0.4rem', fontSize: '0.65rem' }}>
+                                                                {item.priority}
+                                                            </span>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Right: Notepad */}
+                                <div className="notepad-editor-col">
+                                    <div className="notepad-editor-header">
+                                        <h4 className="notepad-section-label" style={{ margin: 0 }}>My Notes</h4>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span className="notepad-save-status">
+                                                {noteSaving ? '💾 Saving…' : noteSaved ? '✅ Saved' : ''}
+                                            </span>
+                                            <button
+                                                className={`notepad-mode-btn${notePreview ? ' active' : ''}`}
+                                                onClick={() => setNotePreview(!notePreview)}
+                                            >
+                                                {notePreview ? '✏️ Edit' : '👁 Preview'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {notePreview ? (
+                                        <div className="notepad-preview">
+                                            {noteContent
+                                                ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{noteContent}</ReactMarkdown>
+                                                : <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Nothing to preview yet.</span>
+                                            }
+                                        </div>
+                                    ) : (
+                                        <textarea
+                                            className="notepad-textarea"
+                                            value={noteContent}
+                                            onChange={e => handleNoteChange(e.target.value)}
+                                            placeholder={`Write your notes in Markdown…\n\n## Key Takeaways\n- \n\n## Follow-ups\n- `}
+                                            spellCheck={false}
+                                        />
+                                    )}
+                                    <p className="notepad-hint">Supports Markdown · Auto-saves · Private to you</p>
+                                </div>
                             </div>
                         </div>
                     </div>

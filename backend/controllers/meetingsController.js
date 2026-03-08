@@ -28,6 +28,41 @@ exports.getMeetingsByUser = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+exports.getNotes = async (req, res) => {
+    try {
+        const { id }       = req.params;
+        const { userName } = req.query;
+        const meeting      = await Meeting.findById(id);
+        if (!meeting) return res.status(404).json({ message: "Meeting not found" });
+        const note = (meeting.notes || []).find(n => n.userName === userName);
+        res.json({ content: note ? note.content : "" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.updateNotes = async (req, res) => {
+    try {
+        const { id }             = req.params;
+        const { userName, content } = req.body;
+        const meeting            = await Meeting.findById(id);
+        if (!meeting) return res.status(404).json({ message: "Meeting not found" });
+
+        const idx = (meeting.notes || []).findIndex(n => n.userName === userName);
+        if (idx > -1) {
+            meeting.notes[idx].content   = content;
+            meeting.notes[idx].updatedAt = new Date();
+        } else {
+            meeting.notes.push({ userName, content, updatedAt: new Date() });
+        }
+
+        await meeting.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 exports.analyzeMeeting = async (req, res) => {
     try {
         const prompt = req.body.prompt;

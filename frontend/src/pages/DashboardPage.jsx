@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api';
 import {
     BarChart, Bar, PieChart, Pie, Cell,
@@ -6,197 +6,265 @@ import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import MainLayout from '../components/MainLayout';
-import GoogleCalendarWidget from '../components/GoogleCalendarWidget';
 import '../styles/dashboard.css';
 
-// Animated counter hook
+// ─── Animated counter hook ───────────────────────────────────────────────────
 function useCountUp(target, duration = 1200) {
     const [count, setCount] = useState(0);
-    const frameRef = useRef(null);
     useEffect(() => {
         if (target === undefined || target === null) return;
         const numTarget = parseFloat(String(target).replace(/[^0-9.]/g, '')) || 0;
-        const start = performance.now();
-        const tick = (now) => {
-            const elapsed = now - start;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        let start = null;
+        const tick = (timestamp) => {
+            if (!start) start = timestamp;
+            const progress = Math.min((timestamp - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
             setCount(Math.round(eased * numTarget));
-            if (progress < 1) frameRef.current = requestAnimationFrame(tick);
+            if (progress < 1) requestAnimationFrame(tick);
         };
-        frameRef.current = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(frameRef.current);
+        requestAnimationFrame(tick);
     }, [target, duration]);
     return count;
 }
 
+// ─── Greeting ────────────────────────────────────────────────────────────────
 const GREETINGS = {
-    morning: [
-        (n) => `Good morning, ${n}! ☀️ Let's make today count.`,
-        (n) => `Rise and shine, ${n}! 🌅 Big things are ahead today.`,
-        (n) => `Morning, ${n}! 💪 Ready to crush it?`,
-    ],
-    afternoon: [
-        (n) => `Good afternoon, ${n}! 🚀 Keep that momentum going.`,
-        (n) => `Hey ${n}! 🎯 Halfway through — finish strong.`,
-        (n) => `Afternoon, ${n}! ⚡ The grind is paying off.`,
-    ],
-    evening: [
-        (n) => `Good evening, ${n}! 🌙 Wrapping up strong?`,
-        (n) => `Evening, ${n}! 🌆 Another great day in the books.`,
-        (n) => `Hey ${n}! 🦉 Night owls get things done too.`,
-    ],
-    night: [
-        (n) => `Still at it, ${n}? 🌌 Dedication: maximum.`,
-        (n) => `Late-night grind, ${n}! 💡 The world's asleep — you're not.`,
-        (n) => `Burning midnight oil, ${n}! 🔥 Respect.`,
-    ],
+    morning:   [(n) => `Good morning, ${n}! ☀️`, (n) => `Rise and shine, ${n}!`, (n) => `Morning, ${n}! 💪`],
+    afternoon: [(n) => `Good afternoon, ${n}! 🚀`, (n) => `Hey ${n}! 🎯`, (n) => `Afternoon, ${n}! ⚡`],
+    evening:   [(n) => `Good evening, ${n}! 🌙`, (n) => `Evening, ${n}! 🌆`, (n) => `Hey ${n}! 🦉`],
+    night:     [(n) => `Still at it, ${n}? 🌌`, (n) => `Late-night grind, ${n}! 💡`, (n) => `Burning midnight oil, ${n}! 🔥`],
 };
-
 const getGreeting = (name) => {
     const h = new Date().getHours();
-    const pool =
-        h >= 5  && h < 12 ? GREETINGS.morning :
-        h >= 12 && h < 18 ? GREETINGS.afternoon :
-        h >= 18 && h < 22 ? GREETINGS.evening  : GREETINGS.night;
+    const pool = h >= 5 && h < 12 ? GREETINGS.morning : h >= 12 && h < 18 ? GREETINGS.afternoon : h >= 18 && h < 22 ? GREETINGS.evening : GREETINGS.night;
     return pool[Math.floor(Math.random() * pool.length)](name || 'there');
 };
 
+// ─── Theme-aligned color palette ─────────────────────────────────────────────
 const C = {
-    blue:   '#3b82f6',
-    purple: '#8b5cf6',
-    green:  '#10b981',
-    gold:   '#f59e0b',
-    rose:   '#f43f5e',
-    cyan:   '#06b6d4',
+    blue:   '#0D99FF',
+    green:  '#30D158',
+    gold:   '#FF9F0A',
+    rose:   '#FF453A',
+    purple: '#BF5AF2',
+    cyan:   '#5AC8FA',
 };
 
-function KpiCard({ label, value, suffix = '', color }) {
-    const num = useCountUp(value);
+// ─── Focus Ring SVG ──────────────────────────────────────────────────────────
+const FocusRing = ({ score }) => {
+    const radius = 52;
+    const circ   = 2 * Math.PI * radius;
+    const offset = circ - (Math.min(score, 100) / 100) * circ;
+    const color  = score >= 70 ? C.green : score >= 40 ? C.gold : C.rose;
     return (
-        <div className="kpi-card">
+        <svg width="130" height="130" viewBox="0 0 130 130" style={{ display: 'block', margin: '0.5rem auto 0' }}>
+            <circle cx="65" cy="65" r={radius} fill="none" stroke="var(--border-color)" strokeWidth="9" />
+            <circle cx="65" cy="65" r={radius} fill="none"
+                stroke={color} strokeWidth="9" strokeLinecap="round"
+                strokeDasharray={circ} strokeDashoffset={offset}
+                transform="rotate(-90 65 65)"
+                style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)' }} />
+            <text x="65" y="61" textAnchor="middle" fontSize="24" fontWeight="600" fill="var(--text-main)">{score}</text>
+            <text x="65" y="77" textAnchor="middle" fontSize="9"  fontWeight="600" fill="var(--text-muted)" letterSpacing="0.08em">FOCUS %</text>
+        </svg>
+    );
+};
+
+// ─── KPI Card ────────────────────────────────────────────────────────────────
+function KpiCard({ label, value, suffix = '', color, badge }) {
+    const num = useCountUp(typeof value === 'number' ? value : 0);
+    return (
+        <div className="kpi-card" style={color ? { borderLeftColor: color } : {}}>
             <span className="kpi-label">{label}</span>
             <span className="kpi-value" style={color ? { color } : {}}>
                 {num}
-                {suffix && (
-                    <sub style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)', marginLeft: '0.2rem' }}>
-                        {suffix}
-                    </sub>
+                {suffix && <sub style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '0.2rem' }}>{suffix}</sub>}
+                {badge !== undefined && (
+                    <span className="kpi-badge" style={{
+                        color:       badge >= 0 ? C.green : C.rose,
+                        background:  badge >= 0 ? 'rgba(48,209,88,0.12)' : 'rgba(255,69,58,0.12)',
+                    }}>
+                        {badge >= 0 ? '▲' : '▼'} {Math.abs(badge)}%
+                    </span>
                 )}
             </span>
         </div>
     );
 }
 
+// ─── Custom Recharts Tooltip ──────────────────────────────────────────────────
+const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    return (
+        <div style={{
+            background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+            padding: '0.75rem 1rem', borderRadius: '12px',
+            boxShadow: 'var(--shadow-card)', fontFamily: "'Inter', sans-serif",
+        }}>
+            <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>{label}</p>
+            {payload.map((entry, i) => (
+                <p key={i} style={{ margin: '2px 0', fontWeight: 700, fontSize: '1rem', color: entry.color || 'var(--text-main)' }}>
+                    {entry.name}: {entry.value}
+                </p>
+            ))}
+        </div>
+    );
+};
 
+const axisStyle = { fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600, fontFamily: 'Inter' };
+const RANK_BADGES = ['🥇', '🥈', '🥉'];
+const RANGES = [{ label: 'Last 7d', value: '7' }, { label: 'Last 30d', value: '30' }, { label: 'Last 90d', value: '90' }, { label: 'All time', value: 'all' }];
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 const DashboardPage = () => {
-    const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState(null);
+    const [loading, setLoading]           = useState(true);
+    const [stats,   setStats]             = useState(null);
+    const [range,   setRange]             = useState('all');
+    const [digest,  setDigest]            = useState('');
+    const [digestLoading, setDigestLoading] = useState(false);
+    const [viewMode, setViewMode]           = useState('team'); // 'team' | 'personal'
+
     const userRole = localStorage.getItem('userRole');
-    const userName = localStorage.getItem('userName');
-    const isAdmin = userRole === 'admin';
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const greeting = useRef(getGreeting(userName)).current;
+    const userName = localStorage.getItem('userName') || 'there';
+    const isAdmin  = userRole === 'admin';
+    const [greeting] = useState(() => getGreeting(userName));
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const endpoint = isAdmin ? '/api/analytics/admin' : `/api/analytics/employee?userName=${userName}`;
-                const response = await api.get(endpoint);
-                setStats(response.data);
-            } catch (error) {
-                console.error("Error fetching analytics:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, [isAdmin, userName]);
+    const fetchStats = useCallback(async () => {
+        setLoading(true);
+        setStats(null); // clear stale data so guards prevent rendering wrong-shape charts
+        try {
+            const usePersonal = !isAdmin || viewMode === 'personal';
+            const endpoint = usePersonal
+                ? `/api/analytics/employee?userName=${encodeURIComponent(userName)}&range=${range}`
+                : `/api/analytics/admin?range=${range}`;
+            const response = await api.get(endpoint);
+            setStats(response.data);
+        } catch (error) {
+            console.error("Error fetching analytics:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [isAdmin, userName, range, viewMode]);
 
-    if (loading) {
-        return (
-            <MainLayout>
-                <div className="loading-container">Loading your data...</div>
-            </MainLayout>
-        );
-    }
+    useEffect(() => { fetchStats(); }, [fetchStats]);
 
-    if (!stats) {
-        return (
-            <MainLayout>
-                <div className="loading-container">Could not load stats. Please refresh.</div>
-            </MainLayout>
-        );
-    }
-
-    const CustomTooltip = ({ active, payload, label }) => {
-        if (!active || !payload || !payload.length) return null;
-        return (
-            <div style={{
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border-color)',
-                padding: '0.75rem 1rem',
-                borderRadius: '12px',
-                boxShadow: 'var(--shadow-card)',
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}>
-                <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>{label}</p>
-                {payload.map((entry, index) => (
-                    <p key={index} style={{ margin: '2px 0', fontWeight: 800, fontSize: '1.05rem', color: entry.color || 'var(--text-main)' }}>
-                        {entry.name}: {entry.value}
-                    </p>
-                ))}
-            </div>
-        );
+    const fetchDigest = async () => {
+        setDigestLoading(true);
+        try {
+            const res = await api.get('/api/analytics/digest');
+            setDigest(res.data.digest);
+        } catch {
+            setDigest('Could not generate digest. Please try again.');
+        } finally {
+            setDigestLoading(false);
+        }
     };
 
-    const axisStyle = { fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600 };
+    if (loading) return <MainLayout><div className="loading-container">Loading your data...</div></MainLayout>;
+    if (!stats)  return <MainLayout><div className="loading-container">Could not load stats. Please refresh.</div></MainLayout>;
 
     return (
         <MainLayout>
             <div className="dashboard-container">
+
+                {/* ── Header + Range Control ── */}
                 <header className="dashboard-header">
-                    <h1>{greeting}</h1>
-                    <p className="dashboard-subtitle">
-                        {isAdmin ? '📊 Company-wide analytics at a glance' : '📈 Your personal performance snapshot'}
-                    </p>
+                    <div className="dashboard-header-row">
+                        <div>
+                            <h1>{greeting}</h1>
+                            <p className="dashboard-subtitle">
+                                {isAdmin && viewMode === 'team'
+                                    ? '📊 Company-wide analytics at a glance'
+                                    : '📈 Your personal performance snapshot'}
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            {isAdmin && (
+                                <div className="view-toggle">
+                                    <button
+                                        className={`view-toggle-btn${viewMode === 'team' ? ' active' : ''}`}
+                                        onClick={() => { setViewMode('team'); setStats(null); }}
+                                    >
+                                        🏢 Team
+                                    </button>
+                                    <button
+                                        className={`view-toggle-btn${viewMode === 'personal' ? ' active' : ''}`}
+                                        onClick={() => { setViewMode('personal'); setStats(null); }}
+                                    >
+                                        👤 My View
+                                    </button>
+                                </div>
+                            )}
+                            <div className="range-control">
+                                {RANGES.map(r => (
+                                    <button key={r.value} className={`range-btn${range === r.value ? ' active' : ''}`} onClick={() => setRange(r.value)}>
+                                        {r.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </header>
 
-                {/* KPI Metrics */}
+                {/* ── AI Weekly Digest (Admin team view only) ── */}
+                {isAdmin && viewMode === 'team' && (
+                    <div className="digest-card">
+                        <div className="digest-left">
+                            <span className="digest-icon">🤖</span>
+                            <div>
+                                <div className="digest-label">AI Weekly Digest</div>
+                                <p className="digest-text">
+                                    {digest || 'Generate a Qwen-powered plain-English summary of this week\'s team performance.'}
+                                </p>
+                            </div>
+                        </div>
+                        <button className="digest-btn" onClick={fetchDigest} disabled={digestLoading}>
+                            {digestLoading ? (
+                                <><span className="digest-spinner" /> Generating…</>
+                            ) : (
+                                digest ? 'Regenerate' : 'Generate Digest'
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                {/* ── KPI Row ── */}
                 <div className="kpi-row">
-                    {isAdmin ? (
+                    {isAdmin && viewMode === 'team' ? (
                         <>
                             <KpiCard label="Total Meetings"  value={stats.kpis.totalMeetings} />
                             <KpiCard label="Success Score"   value={stats.kpis.effectivenessScore} suffix="/100" color={C.blue} />
                             <KpiCard label="Team Balance"    value={stats.kpis.globalFocusScore}   suffix="%"    color={C.gold} />
-                            <KpiCard label="Completion Rate" value={stats.kpis.completionRate}     suffix="%"    color={C.green} />
+                            <KpiCard label="Completion Rate" value={stats.kpis.completionRate}      suffix="%"    color={C.green} />
+                            <KpiCard label="Monthly Growth"  value={Math.abs(stats.kpis.monthlyGrowth)} suffix="%" color={stats.kpis.monthlyGrowth >= 0 ? C.cyan : C.rose} badge={stats.kpis.monthlyGrowth} />
                         </>
                     ) : (
                         <>
                             <KpiCard label="Pending Tasks"   value={stats.kpis.openTasks} />
-                            <KpiCard label="Day Streak"      value={stats.kpis.streak}         suffix=" days" color={C.gold} />
-                            <KpiCard label="Completion Rate" value={stats.kpis.completedRatio} suffix="%"     color={C.green} />
-                            <KpiCard label="Points Earned"   value={stats.kpis.personalImpact}               color={C.blue} />
-                            <KpiCard label="Meetings Led"    value={stats.kpis.meetingsAttended || 0}         color={C.purple} />
+                            <KpiCard label="Day Streak"      value={stats.kpis.streak}           suffix=" days" color={C.gold} />
+                            <KpiCard label="Completion Rate" value={stats.kpis.completedRatio}   suffix="%"     color={C.green} />
+                            <KpiCard label="Points Earned"   value={stats.kpis.personalImpact}                  color={C.blue} />
+                            <KpiCard label="Meetings"        value={stats.kpis.meetingsAttended || 0}            color={C.purple} />
                         </>
                     )}
                 </div>
 
-                {/* Analytical Visuals Grid */}
+                {/* ── Charts Grid ── */}
                 <div className="dashboard-grid">
-                    {isAdmin ? (
+                    {isAdmin && viewMode === 'team' ? (
                         <>
+                            {/* Tasks Activity */}
                             <div className="chart-card">
                                 <h3>Tasks Activity</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <AreaChart data={stats.charts.lifecycle}>
+                                <ResponsiveContainer width="100%" height={260}>
+                                    <AreaChart data={stats.charts.lifecycle || []}>
                                         <defs>
                                             <linearGradient id="gc" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.blue}  stopOpacity={0.18} />
+                                                <stop offset="5%"  stopColor={C.blue}  stopOpacity={0.15} />
                                                 <stop offset="95%" stopColor={C.blue}  stopOpacity={0} />
                                             </linearGradient>
                                             <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.green} stopOpacity={0.18} />
+                                                <stop offset="5%"  stopColor={C.green} stopOpacity={0.15} />
                                                 <stop offset="95%" stopColor={C.green} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
@@ -209,30 +277,30 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Team Performance */}
                             <div className="chart-card">
                                 <h3>Team Performance</h3>
                                 <div className="matrix-table-container">
                                     <table className="matrix-table">
                                         <thead>
-                                            <tr>
-                                                <th>MEMBER</th>
-                                                <th>YIELD</th>
-                                                <th>PENDING</th>
-                                            </tr>
+                                            <tr><th>#</th><th>MEMBER</th><th>YIELD</th><th>PENDING</th></tr>
                                         </thead>
                                         <tbody>
-                                            {stats.charts.memberMatrix.map((m, i) => (
+                                            {(stats.charts.memberMatrix || []).map((m, i) => (
                                                 <tr key={i}>
+                                                    <td style={{ color: 'var(--text-muted)', width: '2rem', fontSize: '1rem' }}>{RANK_BADGES[i] || `${i + 1}`}</td>
                                                     <td style={{ fontWeight: 700 }}>{m.name}</td>
                                                     <td>
-                                                        <div className="yield-pill" style={{
-                                                            background: m.ratio > 70 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                                                            color: m.ratio > 70 ? C.green : C.rose
-                                                        }}>
-                                                            {m.ratio}%
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <div style={{ flex: 1, height: '4px', background: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden', minWidth: '50px' }}>
+                                                                <div style={{ width: `${m.ratio}%`, height: '100%', background: m.ratio >= 70 ? C.green : m.ratio >= 40 ? C.gold : C.rose, borderRadius: '2px', transition: 'width 1s ease' }} />
+                                                            </div>
+                                                            <div className="yield-pill" style={{ background: m.ratio >= 70 ? 'rgba(48,209,88,0.12)' : 'rgba(255,69,58,0.12)', color: m.ratio >= 70 ? C.green : C.rose }}>
+                                                                {m.ratio}%
+                                                            </div>
                                                         </div>
                                                     </td>
-                                                    <td style={{ color: 'var(--text-muted)' }}>{m.pending}</td>
+                                                    <td style={{ color: 'var(--text-muted)', textAlign: 'right' }}>{m.pending}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -240,124 +308,189 @@ const DashboardPage = () => {
                                 </div>
                             </div>
 
+                            {/* Priority Distribution */}
                             <div className="chart-card">
                                 <h3>Priority Distribution</h3>
-                                <ResponsiveContainer width="100%" height={300}>
+                                <ResponsiveContainer width="100%" height={260}>
                                     <PieChart>
-                                        <Pie data={stats.charts.priorityDistribution} innerRadius={60} outerRadius={90} paddingAngle={6} dataKey="value">
+                                        <Pie data={stats.charts.priorityDistribution || []} innerRadius={60} outerRadius={90} paddingAngle={6} dataKey="value">
                                             <Cell fill={C.rose} />
                                             <Cell fill={C.gold} />
                                             <Cell fill={C.green} />
                                         </Pie>
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)' }} />
+                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Team Velocity */}
+                            <div className="chart-card">
+                                <h3>Team Velocity</h3>
+                                <ResponsiveContainer width="100%" height={260}>
+                                    <AreaChart data={stats.charts.teamVelocity || []}>
+                                        <defs>
+                                            <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%"  stopColor={C.purple} stopOpacity={0.15} />
+                                                <stop offset="95%" stopColor={C.purple} stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis dataKey="week" tick={axisStyle} tickLine={false} axisLine={false} />
+                                        <YAxis hide />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Area type="monotone" name="Completed" dataKey="completed" stroke={C.purple} strokeWidth={2.5} fill="url(#gv)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Stale Tasks */}
+                            <div className="chart-card">
+                                <h3>Stale Open Tasks</h3>
+                                <ResponsiveContainer width="100%" height={260}>
+                                    <BarChart data={stats.charts.staleTaskBuckets || []} layout="vertical">
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="label" type="category" tick={axisStyle} tickLine={false} axisLine={false} width={72} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
+                                        <Bar dataKey="count" name="Tasks" radius={[0, 6, 6, 0]} barSize={28}>
+                                            {(stats.charts.staleTaskBuckets || []).map((_, idx) => (
+                                                <Cell key={idx} fill={[C.gold, C.rose, C.purple][idx]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Action Item Load */}
+                            <div className="chart-card">
+                                <h3>Action Item Load</h3>
+                                <ResponsiveContainer width="100%" height={260}>
+                                    <BarChart data={stats.charts.actionItemAssignees || []} layout="vertical">
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" tick={{ ...axisStyle, fontSize: 9 }} tickLine={false} axisLine={false} width={88} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
+                                        <Bar dataKey="assigned"  name="Assigned"  fill={C.blue}  radius={[0, 4, 4, 0]} barSize={9} />
+                                        <Bar dataKey="completed" name="Completed" fill={C.green} radius={[0, 4, 4, 0]} barSize={9} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Urgent Tasks */}
                             <div className="chart-card full-width">
                                 <h3>🔴 Urgent Tasks</h3>
                                 <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-                                    {stats.charts.urgentTasks.length > 0
-                                        ? stats.charts.urgentTasks.map(task => (
+                                    {(stats.charts.urgentTasks || []).length > 0
+                                        ? (stats.charts.urgentTasks || []).map(task => (
                                             <div key={task._id} className="urgent-task-item">
                                                 <div>
                                                     <div className="urgent-task-title">{task.title}</div>
                                                     <div className="urgent-task-meta">By {task.assignedTo || 'Unassigned'}</div>
                                                 </div>
                                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                                    <div style={{ color: C.rose, fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>CRITICAL</div>
+                                                    <div style={{ color: C.rose, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>CRITICAL</div>
                                                     <div className="urgent-task-meta">{task.deadline || 'OPEN'}</div>
                                                 </div>
                                             </div>
                                         ))
-                                        : <p style={{ color: 'var(--text-muted)' }}>No high-priority items on the agenda.</p>
+                                        : <p style={{ color: 'var(--text-muted)' }}>No high-priority items on the agenda. 🎉</p>
                                     }
                                 </div>
                             </div>
 
+                            {/* Meeting Frequency */}
                             <div className="chart-card">
-                                <h3>📆 Meeting Frequency</h3>
-                                <ResponsiveContainer width="100%" height={260}>
+                                <h3>Meeting Frequency</h3>
+                                <ResponsiveContainer width="100%" height={240}>
                                     <BarChart data={stats.charts.meetingsByWeek || []}>
                                         <XAxis dataKey="week" tick={axisStyle} tickLine={false} axisLine={false} />
                                         <YAxis hide />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="count" fill={C.purple} radius={[6, 6, 0, 0]} barSize={26} name="Meetings" />
+                                        <Bar dataKey="count" fill={C.cyan} radius={[6, 6, 0, 0]} barSize={26} name="Meetings" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Jira vs Local */}
                             <div className="chart-card">
-                                <h3>🔗 Jira vs Local Tasks</h3>
-                                <ResponsiveContainer width="100%" height={260}>
+                                <h3>Jira vs Local Tasks</h3>
+                                <ResponsiveContainer width="100%" height={240}>
                                     <PieChart>
                                         <Pie data={stats.charts.jiraVsLocal || []} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={5} dataKey="value">
                                             <Cell fill={C.blue} />
                                             <Cell fill={C.purple} />
                                         </Pie>
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)' }} />
+                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
-
-                            <GoogleCalendarWidget />
                         </>
                     ) : (
                         <>
+                            {/* Focus Ring */}
+                            <div className="chart-card" style={{ alignItems: 'center' }}>
+                                <h3>Weekly Focus Score</h3>
+                                <FocusRing score={stats.kpis.personalFocusScore || 0} />
+                                <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+                                    {stats.kpis.completedThisWeek || 0} of {stats.kpis.assignedThisWeek || 0} tasks completed this week
+                                </p>
+                            </div>
+
+                            {/* Work Skills Radar */}
                             <div className="chart-card">
                                 <h3>Work Skills</h3>
-                                <ResponsiveContainer width="100%" height={320}>
-                                    <RadarChart data={stats.charts.priorityMatrix}>
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <RadarChart data={stats.charts.priorityMatrix || []}>
                                         <PolarGrid stroke="var(--border-color)" />
                                         <PolarAngleAxis dataKey="subject" tick={axisStyle} />
                                         <PolarRadiusAxis angle={30} domain={[0, 10]} hide />
-                                        <Radar name="Performance" dataKey="A" stroke={C.blue} fill={C.blue} fillOpacity={0.3} />
+                                        <Radar name="Performance" dataKey="A" stroke={C.blue} fill={C.blue} fillOpacity={0.25} />
                                         <Tooltip content={<CustomTooltip />} />
                                     </RadarChart>
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Weekly Work */}
                             <div className="chart-card">
                                 <h3>Weekly Work</h3>
-                                <ResponsiveContainer width="100%" height={320}>
-                                    <BarChart data={stats.charts.productivityByDay}>
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <BarChart data={stats.charts.productivityByDay || []}>
                                         <XAxis dataKey="day" tick={axisStyle} tickLine={false} axisLine={false} />
                                         <YAxis hide />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="count" fill={C.green} radius={[6, 6, 0, 0]} barSize={36} />
+                                        <Bar dataKey="count" fill={C.green} radius={[6, 6, 0, 0]} barSize={36} name="Tasks" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Priority Mix */}
                             <div className="chart-card">
                                 <h3>Priority Mix</h3>
-                                <ResponsiveContainer width="100%" height={280}>
+                                <ResponsiveContainer width="100%" height={260}>
                                     <PieChart>
-                                        <Pie data={stats.charts.priorityDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
+                                        <Pie data={stats.charts.priorityDistribution || []} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
                                             <Cell fill={C.rose} />
                                             <Cell fill={C.gold} />
                                             <Cell fill={C.green} />
                                         </Pie>
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)' }} />
+                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Upcoming Tasks */}
                             <div className="chart-card full-width">
                                 <h3>📅 Upcoming Tasks</h3>
                                 <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-                                    {stats.charts.upcomingDeadlines.length > 0
-                                        ? stats.charts.upcomingDeadlines.map(task => (
+                                    {(stats.charts.upcomingDeadlines || []).length > 0
+                                        ? (stats.charts.upcomingDeadlines || []).map(task => (
                                             <div key={task._id} className="urgent-task-item">
                                                 <div>
                                                     <div className="urgent-task-title">{task.title}</div>
                                                     <div className="urgent-task-meta">Status: Active</div>
                                                 </div>
                                                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                                    <div style={{ color: C.gold, fontSize: '0.7rem', fontWeight: 800, marginBottom: '0.2rem' }}>DUE</div>
+                                                    <div style={{ color: C.gold, fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.2rem' }}>DUE</div>
                                                     <div className="urgent-task-meta">{task.deadline}</div>
                                                 </div>
                                             </div>
@@ -367,13 +500,14 @@ const DashboardPage = () => {
                                 </div>
                             </div>
 
+                            {/* 7-Day Throughput */}
                             <div className="chart-card">
-                                <h3>📈 7-Day Throughput</h3>
-                                <ResponsiveContainer width="100%" height={260}>
+                                <h3>7-Day Throughput</h3>
+                                <ResponsiveContainer width="100%" height={240}>
                                     <AreaChart data={stats.charts.throughput || []}>
                                         <defs>
                                             <linearGradient id="gtp" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.purple} stopOpacity={0.2} />
+                                                <stop offset="5%"  stopColor={C.purple} stopOpacity={0.18} />
                                                 <stop offset="95%" stopColor={C.purple} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
@@ -385,7 +519,24 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            <GoogleCalendarWidget />
+                            {/* Meeting History */}
+                            <div className="chart-card">
+                                <h3>My Meetings</h3>
+                                <div className="meeting-history-list">
+                                    {(stats.charts.meetingsWithNotes || []).length > 0
+                                        ? (stats.charts.meetingsWithNotes || []).slice(0, 6).map(m => (
+                                            <div key={m._id} className="meeting-history-item" onClick={() => window.location.href = '/meeting'} role="button">
+                                                <div>
+                                                    <div className="urgent-task-title">{m.title}</div>
+                                                    <div className="urgent-task-meta">{m.actionItemsCount} action items · {new Date(m.createdAt).toLocaleDateString()}</div>
+                                                </div>
+                                                {m.hasNote && <span className="note-badge" title="Has your notes">📝</span>}
+                                            </div>
+                                        ))
+                                        : <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No meetings recorded yet.</p>
+                                    }
+                                </div>
+                            </div>
                         </>
                     )}
                 </div>
