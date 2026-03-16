@@ -8,22 +8,22 @@ import '../styles/chatAgent.css';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CHIPS = [
-    { label: '📅 My Meetings',    text: 'show my meetings'               },
-    { label: '✅ My Tasks',        text: 'show my tasks'                  },
-    { label: '📊 My Analytics',   text: 'show my analytics'              },
-    { label: '📝 Weekly Digest',   text: 'generate weekly digest'         },
-    { label: '🏢 Team Stats',      text: 'show team performance'          },
-    { label: '✔️ Completed',       text: 'show my completed tasks'        },
-    { label: '🗣️ Meeting Q&A',     text: 'ask questions about a meeting'  },
-    { label: '🔍 Search...',       special: 'search'                      },
-    { label: '📄 Attach Doc',      special: 'doc'                         },
+    { label: '📅 My Meetings', text: 'show my meetings' },
+    { label: '✅ My Tasks', text: 'show my tasks' },
+    { label: '📊 My Analytics', text: 'show my analytics' },
+    { label: '📝 Weekly Digest', text: 'generate weekly digest' },
+    { label: '🏢 Team Stats', text: 'show team performance' },
+    { label: '✔️ Completed', text: 'show my completed tasks' },
+    { label: '🗣️ Meeting Q&A', text: 'ask questions about a meeting' },
+    { label: '🔍 Search...', special: 'search' },
+    { label: '📄 Attach Doc', special: 'doc' },
 ];
 
 // Floating hint chips shown near the FAB when the panel is closed
 const FAB_HINTS = [
     { label: '📊 My Analytics', text: 'show my analytics' },
-    { label: '✅ My Tasks',      text: 'show my tasks'     },
-    { label: '📅 My Meetings',   text: 'show my meetings'  },
+    { label: '✅ My Tasks', text: 'show my tasks' },
+    { label: '📅 My Meetings', text: 'show my meetings' },
 ];
 
 const WELCOME = `Hi! I'm **FirstMeet AI** 👋
@@ -53,7 +53,7 @@ const renderMarkdown = (text) => {
     const lines = text.split('\n');
     const elements = [];
     let listItems = [];
-    let listType  = null;
+    let listType = null;
 
     const flushList = () => {
         if (!listItems.length) return;
@@ -65,7 +65,7 @@ const renderMarkdown = (text) => {
             : <ul key={`list-${elements.length}`} className="ca-md-list">{items}</ul>
         );
         listItems = [];
-        listType  = null;
+        listType = null;
     };
 
     lines.forEach((line, i) => {
@@ -195,10 +195,10 @@ const StatCard = ({ label, value, color = '#0D99FF' }) => (
 const TeamStatsView = ({ data, onNav }) => (
     <div className="ca-data-block">
         <div className="ca-stats-grid">
-            <StatCard label="Completion Rate"     value={`${data.completionRate}%`} color="#30D158"  />
-            <StatCard label="Total Tasks"          value={data.totalTasks}           color="#0D99FF"  />
-            <StatCard label="Total Meetings"       value={data.totalMeetings}        color="#BF5AF2"  />
-            <StatCard label="HIGH Priority Open"   value={data.highPriority}         color="#FF453A"  />
+            <StatCard label="Completion Rate" value={`${data.completionRate}%`} color="#30D158" />
+            <StatCard label="Total Tasks" value={data.totalTasks} color="#0D99FF" />
+            <StatCard label="Total Meetings" value={data.totalMeetings} color="#BF5AF2" />
+            <StatCard label="HIGH Priority Open" value={data.highPriority} color="#FF453A" />
         </div>
         {data.members?.length > 0 && (
             <div className="ca-leaderboard">
@@ -222,10 +222,10 @@ const TeamStatsView = ({ data, onNav }) => (
 const MyStatsView = ({ data, onNav }) => (
     <div className="ca-data-block">
         <div className="ca-stats-grid">
-            <StatCard label="Completion Rate"  value={`${data.rate}%`}          color="#30D158"  />
-            <StatCard label="Pending Tasks"    value={data.pendingCount}         color="#FF9F0A"  />
-            <StatCard label="Weekly Focus"     value={`${data.focusScore}%`}    color="#0D99FF"  />
-            <StatCard label="Meetings"         value={data.meetingsCount}        color="#BF5AF2"  />
+            <StatCard label="Completion Rate" value={`${data.rate}%`} color="#30D158" />
+            <StatCard label="Pending Tasks" value={data.pendingCount} color="#FF9F0A" />
+            <StatCard label="Weekly Focus" value={`${data.focusScore}%`} color="#0D99FF" />
+            <StatCard label="Meetings" value={data.meetingsCount} color="#BF5AF2" />
         </div>
         <div className="ca-focus-detail">
             {data.completedThisWeek} of {data.assignedThisWeek} tasks completed this week
@@ -368,7 +368,7 @@ const MeetingPickerView = ({ meetings, onAction, frozen }) => {
             <div className="ca-section-label">Tap to select • then confirm</div>
             {meetings.length === 0 && <div className="ca-empty">No meetings found.</div>}
             {meetings.map(m => {
-                const id  = String(m._id);
+                const id = String(m._id);
                 const sel = selected.includes(id);
                 return (
                     <button
@@ -418,11 +418,11 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
             );
         }
         if (msg.type === 'meeting_detail' && msg.data) return <MeetingDetail m={msg.data} onNav={onNav} />;
-        if (msg.type === 'tasks'          && msg.data) return <TasksView data={msg.data} onNav={onNav} />;
-        if (msg.type === 'team_stats'     && msg.data) return <TeamStatsView data={msg.data} onNav={onNav} />;
-        if (msg.type === 'my_stats'       && msg.data) return <MyStatsView data={msg.data} onNav={onNav} />;
-        if (msg.type === 'nav'            && msg.navTarget) return <NavView navTarget={msg.navTarget} onNav={onNav} />;
-        if (msg.type === 'insight'        && msg.insight) return <InsightView insight={msg.insight} fileName={msg.fileName} />;
+        if (msg.type === 'tasks' && msg.data) return <TasksView data={msg.data} onNav={onNav} />;
+        if (msg.type === 'team_stats' && msg.data) return <TeamStatsView data={msg.data} onNav={onNav} />;
+        if (msg.type === 'my_stats' && msg.data) return <MyStatsView data={msg.data} onNav={onNav} />;
+        if (msg.type === 'nav' && msg.navTarget) return <NavView navTarget={msg.navTarget} onNav={onNav} />;
+        if (msg.type === 'insight' && msg.insight) return <InsightView insight={msg.insight} fileName={msg.fileName} />;
 
         if (msg.type === 'doc_action') return (
             <DocActionView
@@ -477,27 +477,35 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ChatAgent = () => {
-    const [open, setOpen]           = useState(false);
+    const [open, setOpen] = useState(false);
     const [fabHovered, setFabHovered] = useState(false);
     const [pendingAutoMsg, setPendingAutoMsg] = useState(null);
-    const [input, setInput]         = useState('');
-    const [loading, setLoading]     = useState(false);
-    const [messages, setMessages]   = useState([
-        { role: 'assistant', content: WELCOME, type: 'text', isWelcome: true },
-    ]);
+    const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [messages, setMessages] = useState(() => {
+        const saved = localStorage.getItem('chat_history');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to parse chat history from localStorage', e);
+            }
+        }
+        return [{ role: 'assistant', content: WELCOME, type: 'text', isWelcome: true }];
+    });
     // Document Q&A state
-    const [docFile, setDocFile]             = useState(null);   // raw File
-    const [docTextContent, setDocText]      = useState('');     // extracted text for Q&A
+    const [docFile, setDocFile] = useState(null);   // raw File
+    const [docTextContent, setDocText] = useState('');     // extracted text for Q&A
     // Meeting Q&A state
     const [meetingQAContext, setMeetingQAContext] = useState(null); // array of meeting objects
 
     const { setPendingFile, setPendingTitle } = usePendingFile();
     const { pendingMeetings, setPendingMeetings } = useChatMeeting();
 
-    const fileRef     = useRef(null);
+    const fileRef = useRef(null);
     const messagesRef = useRef(null);
-    const inputRef    = useRef(null);
-    const navigate    = useNavigate();
+    const inputRef = useRef(null);
+    const navigate = useNavigate();
 
     const userName = localStorage.getItem('userName') || '';
     const userRole = localStorage.getItem('userRole') || 'employee';
@@ -506,6 +514,10 @@ const ChatAgent = () => {
     useEffect(() => {
         if (messagesRef.current) {
             messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+        }
+        // Sync to localStorage whenever messages change
+        if (messages.length > 0) {
+            localStorage.setItem('chat_history', JSON.stringify(messages));
         }
     }, [messages, loading]);
 
@@ -525,21 +537,9 @@ const ChatAgent = () => {
             ? `Tell me about the meeting: "${meetings[0].title}"`
             : `Compare these meetings: ${meetings.map(m => `"${m.title}"`).join(', ')}`;
         setPendingAutoMsg(msg);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingMeetings]);
 
-    // Load history from MongoDB on mount
-    useEffect(() => {
-        if (!userName) return;
-        api.get(`/api/chat/history?userName=${encodeURIComponent(userName)}`)
-            .then(res => {
-                const saved = res.data.messages || [];
-                if (saved.length > 0) {
-                    setMessages(prev => [prev[0], ...saved]); // keep welcome msg at top
-                }
-            })
-            .catch(() => {});
-    }, []);
 
     // Don't render on sign-in / sign-up pages
     if (!userName) return null;
@@ -568,26 +568,19 @@ const ChatAgent = () => {
 
         try {
             const res = await api.post('/api/chat/message', {
-                message:        trimmed,
+                message: trimmed,
                 userName,
                 userRole,
-                history:        getHistory([...messages, userMsg]),
-                docContext:     docTextContent   || undefined,
-                meetingContext: meetingQAContext  || undefined,
+                history: getHistory([...messages, userMsg]),
+                docContext: docTextContent || undefined,
+                meetingContext: meetingQAContext || undefined,
             });
 
             const { reply, type, data, navTarget, insight, fileName } = res.data;
             const botMsg = { role: 'assistant', content: reply, type: type || 'text', data, navTarget, insight, fileName };
-            pushMsg(botMsg);
 
-            // Persist to MongoDB
-            api.post('/api/chat/history/append', {
-                userName,
-                messages: [
-                    { role: 'user',      content: trimmed, type: 'text' },
-                    { role: 'assistant', content: reply,   type: type || 'text', navTarget, insight, fileName },
-                ],
-            }).catch(() => {});
+            // Persist to localStorage (handled by useEffect)
+            setMessages(prev => [...prev, botMsg]);
 
             if (type === 'nav' && navTarget) {
                 setTimeout(() => handleNav(navTarget), 2200);
@@ -727,7 +720,7 @@ const ChatAgent = () => {
     };
 
     const clearChat = () => {
-        api.delete(`/api/chat/history?userName=${encodeURIComponent(userName)}`).catch(() => {});
+        localStorage.removeItem('chat_history');
         setMessages([{ role: 'assistant', content: WELCOME, type: 'text', isWelcome: true }]);
         setDocFile(null);
         setDocText('');

@@ -1,10 +1,9 @@
-const Task        = require("../models/tasks");
-const Meeting     = require("../models/meeting");
-const User        = require("../models/user");
-const ChatHistory = require("../models/chatHistory");
+const Task = require("../models/tasks");
+const Meeting = require("../models/meeting");
+const User = require("../models/user");
 const { InferenceClient } = require("@huggingface/inference");
 const mammoth = require("mammoth");
-const fs      = require("fs");
+const fs = require("fs");
 
 const client = new InferenceClient(process.env.HF_API_KEY);
 
@@ -51,7 +50,7 @@ const detectIntent = (message) => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const extractKeyword = (message) => {
-    const stopWords = new Set(["find","search","look","for","locate","meetings","meeting","about","related","to","regarding","on","discussing","show","me","a","the","of","in","at","from","that","with","is"]);
+    const stopWords = new Set(["find", "search", "look", "for", "locate", "meetings", "meeting", "about", "related", "to", "regarding", "on", "discussing", "show", "me", "a", "the", "of", "in", "at", "from", "that", "with", "is"]);
     return message.toLowerCase().split(/\s+/).filter(w => !stopWords.has(w)).join(" ").trim() || message;
 };
 
@@ -74,11 +73,11 @@ exports.chatMessage = async (req, res) => {
         if (intent === "my_meetings") {
             const meetings = await Meeting.find({ userName }).sort({ createdAt: -1 }).limit(10).lean();
             contextData = meetings.map(m => ({
-                _id:              m._id,
-                title:            m.title,
-                summary:          m.summary,
+                _id: m._id,
+                title: m.title,
+                summary: m.summary,
                 actionItemsCount: (m.actionItems || []).length,
-                createdAt:        m.createdAt,
+                createdAt: m.createdAt,
             }));
             contextText = `${userName} has ${meetings.length} meetings. Recent: ` +
                 meetings.slice(0, 5).map(m => `"${m.title}" (${new Date(m.createdAt).toLocaleDateString()}, ${(m.actionItems || []).length} action items)`).join("; ");
@@ -87,9 +86,9 @@ exports.chatMessage = async (req, res) => {
 
         else if (intent === "meeting_detail") {
             const nameMatch = message.match(/(?:about|in|for|of|from)\s+[""']?([^""'?.!]+)[""']?/i);
-            const keyword   = nameMatch ? nameMatch[1].trim() : extractKeyword(message);
-            const regex     = new RegExp(keyword.split(" ").join("|"), "i");
-            const found     = await Meeting.find({
+            const keyword = nameMatch ? nameMatch[1].trim() : extractKeyword(message);
+            const regex = new RegExp(keyword.split(" ").join("|"), "i");
+            const found = await Meeting.find({
                 userName,
                 $or: [{ title: regex }, { summary: regex }, { "actionItems.task": regex }, { "actionItems.title": regex }],
             }).sort({ createdAt: -1 }).limit(1).lean();
@@ -103,8 +102,8 @@ exports.chatMessage = async (req, res) => {
         }
 
         else if (intent === "my_tasks") {
-            const tasks    = await Task.find({ assignedTo: userName }).sort({ createdAt: -1 }).lean();
-            const pending   = tasks.filter(t => !t.isCompleted);
+            const tasks = await Task.find({ assignedTo: userName }).sort({ createdAt: -1 }).lean();
+            const pending = tasks.filter(t => !t.isCompleted);
             const completed = tasks.filter(t => t.isCompleted);
             contextData = { pending, completed };
             contextText = `${userName}'s tasks — Pending (${pending.length}): ${pending.map(t => `${t.title} [${t.priority}]${t.deadline ? " due " + t.deadline : ""}`).join("; ") || "None"}. Completed: ${completed.length}`;
@@ -112,7 +111,7 @@ exports.chatMessage = async (req, res) => {
         }
 
         else if (intent === "completed_tasks") {
-            const tasks     = await Task.find({ assignedTo: userName, isCompleted: true }).sort({ updatedAt: -1 }).lean();
+            const tasks = await Task.find({ assignedTo: userName, isCompleted: true }).sort({ updatedAt: -1 }).lean();
             contextData = { pending: [], completed: tasks };
             contextText = `${userName} has completed ${tasks.length} tasks: ${tasks.map(t => t.title).join("; ") || "None"}`;
             responseType = "tasks";
@@ -122,14 +121,14 @@ exports.chatMessage = async (req, res) => {
             if (userRole !== "admin") {
                 return res.json({ reply: "Team analytics are only available to admins. Would you like to see your personal stats instead?", type: "text" });
             }
-            const allTasks   = await Task.find().lean();
+            const allTasks = await Task.find().lean();
             const allMeetings = await Meeting.find().lean();
-            const users       = await User.find({ role: "employee" }).lean();
-            const completed   = allTasks.filter(t => t.isCompleted).length;
-            const rate        = allTasks.length > 0 ? Math.round(completed / allTasks.length * 100) : 0;
-            const highP       = allTasks.filter(t => !t.isCompleted && t.priority === "HIGH").length;
-            const members     = users.map(u => {
-                const ut   = allTasks.filter(t => t.assignedTo === u.userName);
+            const users = await User.find({ role: "employee" }).lean();
+            const completed = allTasks.filter(t => t.isCompleted).length;
+            const rate = allTasks.length > 0 ? Math.round(completed / allTasks.length * 100) : 0;
+            const highP = allTasks.filter(t => !t.isCompleted && t.priority === "HIGH").length;
+            const members = users.map(u => {
+                const ut = allTasks.filter(t => t.assignedTo === u.userName);
                 const comp = ut.filter(t => t.isCompleted).length;
                 return { name: u.userName, total: ut.length, completed: comp, ratio: ut.length > 0 ? Math.round(comp / ut.length * 100) : 0 };
             }).sort((a, b) => b.ratio - a.ratio);
@@ -139,45 +138,45 @@ exports.chatMessage = async (req, res) => {
         }
 
         else if (intent === "my_analytics") {
-            const myTasks    = await Task.find({ assignedTo: userName }).lean();
+            const myTasks = await Task.find({ assignedTo: userName }).lean();
             const myMeetings = await Meeting.find({ userName }).lean();
-            const completed  = myTasks.filter(t => t.isCompleted);
-            const pending    = myTasks.filter(t => !t.isCompleted);
-            const rate       = myTasks.length > 0 ? Math.round(completed.length / myTasks.length * 100) : 0;
-            const weekStart  = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); weekStart.setHours(0, 0, 0, 0);
-            const cTW        = myTasks.filter(t => t.isCompleted && new Date(t.updatedAt) >= weekStart).length;
-            const aTW        = myTasks.filter(t => new Date(t.createdAt) >= weekStart).length;
-            const focus      = aTW > 0 ? Math.round(cTW / aTW * 100) : cTW > 0 ? 100 : 0;
+            const completed = myTasks.filter(t => t.isCompleted);
+            const pending = myTasks.filter(t => !t.isCompleted);
+            const rate = myTasks.length > 0 ? Math.round(completed.length / myTasks.length * 100) : 0;
+            const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay()); weekStart.setHours(0, 0, 0, 0);
+            const cTW = myTasks.filter(t => t.isCompleted && new Date(t.updatedAt) >= weekStart).length;
+            const aTW = myTasks.filter(t => new Date(t.createdAt) >= weekStart).length;
+            const focus = aTW > 0 ? Math.round(cTW / aTW * 100) : cTW > 0 ? 100 : 0;
             contextData = { rate, pendingCount: pending.length, completedCount: completed.length, meetingsCount: myMeetings.length, focusScore: focus, completedThisWeek: cTW, assignedThisWeek: aTW };
             contextText = `${userName}'s analytics: ${rate}% completion, ${pending.length} pending, ${completed.length} done, ${myMeetings.length} meetings attended, weekly focus ${focus}%`;
             responseType = "my_stats";
         }
 
         else if (intent === "weekly_digest") {
-            const now       = new Date();
+            const now = new Date();
             const weekStart = new Date(now); weekStart.setDate(weekStart.getDate() - 7);
-            const wTasks    = await Task.find({ createdAt: { $gte: weekStart } }).lean();
+            const wTasks = await Task.find({ createdAt: { $gte: weekStart } }).lean();
             const wMeetings = await Meeting.find({ createdAt: { $gte: weekStart } }).lean();
-            const open      = await Task.find({ isCompleted: false }).lean();
-            const cTW       = wTasks.filter(t => t.isCompleted).length;
-            const highP     = open.filter(t => t.priority === "HIGH").length;
-            contextText     = `Weekly stats for digest: ${cTW} tasks completed, ${wTasks.length} tasks created, ${highP} HIGH-priority open, ${wMeetings.length} meetings this week. Write a 3-sentence plain-English digest.`;
-            responseType    = "digest";
+            const open = await Task.find({ isCompleted: false }).lean();
+            const cTW = wTasks.filter(t => t.isCompleted).length;
+            const highP = open.filter(t => t.priority === "HIGH").length;
+            contextText = `Weekly stats for digest: ${cTW} tasks completed, ${wTasks.length} tasks created, ${highP} HIGH-priority open, ${wMeetings.length} meetings this week. Write a 3-sentence plain-English digest.`;
+            responseType = "digest";
         }
 
         else if (intent === "search_meetings") {
             const keyword = extractKeyword(message);
-            const regex   = new RegExp(keyword.split(" ").join("|"), "i");
-            const query   = userRole === "admin"
+            const regex = new RegExp(keyword.split(" ").join("|"), "i");
+            const query = userRole === "admin"
                 ? { $or: [{ title: regex }, { summary: regex }] }
                 : { userName, $or: [{ title: regex }, { summary: regex }] };
-            const found   = await Meeting.find(query).sort({ createdAt: -1 }).limit(6).lean();
-            contextData   = found.map(m => ({
-                _id:              m._id,
-                title:            m.title,
-                summary:          m.summary,
+            const found = await Meeting.find(query).sort({ createdAt: -1 }).limit(6).lean();
+            contextData = found.map(m => ({
+                _id: m._id,
+                title: m.title,
+                summary: m.summary,
                 actionItemsCount: (m.actionItems || []).length,
-                createdAt:        m.createdAt,
+                createdAt: m.createdAt,
             }));
             contextText = found.length > 0
                 ? `Found ${found.length} meetings matching "${keyword}": ${found.map(m => `"${m.title}"`).join(", ")}`
@@ -187,14 +186,14 @@ exports.chatMessage = async (req, res) => {
 
         else if (intent === "navigate") {
             const m = message.toLowerCase();
-            if (/analytics?|dashboard/.test(m))      navTarget = "/analytics";
+            if (/analytics?|dashboard/.test(m)) navTarget = "/analytics";
             else if (/new meeting|create meeting/.test(m)) navTarget = "/meeting";
-            else if (/meeting/.test(m))               navTarget = "/meeting";
-            else if (/completed/.test(m))             navTarget = "/completed";
-            else if (/email/.test(m))                 navTarget = "/email";
-            else if (/jira/.test(m))                  navTarget = "/jira";
-            else                                       navTarget = "/home";
-            contextText  = `User wants to navigate to ${navTarget}. Confirm you will take them there now.`;
+            else if (/meeting/.test(m)) navTarget = "/meeting";
+            else if (/completed/.test(m)) navTarget = "/completed";
+            else if (/email/.test(m)) navTarget = "/email";
+            else if (/jira/.test(m)) navTarget = "/jira";
+            else navTarget = "/home";
+            contextText = `User wants to navigate to ${navTarget}. Confirm you will take them there now.`;
             responseType = "nav";
         }
 
@@ -203,8 +202,8 @@ exports.chatMessage = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .select({ title: 1, summary: 1, actionItems: 1, createdAt: 1 })
                 .lean();
-            contextData  = meetings;
-            contextText  = `${userName} wants to ask questions about their meetings. Show them the meeting picker so they can choose.`;
+            contextData = meetings;
+            contextText = `${userName} wants to ask questions about their meetings. Show them the meeting picker so they can choose.`;
             responseType = "meeting_picker";
         }
 
@@ -231,8 +230,8 @@ exports.chatMessage = async (req, res) => {
         ];
 
         const response = await client.chatCompletion({
-            model:      "Qwen/Qwen2.5-72B-Instruct",
-            messages:   qwenMessages,
+            model: "Qwen/Qwen2.5-72B-Instruct",
+            messages: qwenMessages,
             max_tokens: (docContext || meetingContext) ? 600 : 380,
         });
 
@@ -274,11 +273,11 @@ exports.analyzeDocument = async (req, res) => {
             model: "Qwen/Qwen2.5-72B-Instruct",
             messages: [
                 {
-                    role:    "system",
+                    role: "system",
                     content: `You are FirstMeet AI, a meeting intelligence assistant. Analyze the document and return ONLY a valid JSON object with exactly these 4 keys: "summary" (string, 2-3 sentences), "keyDecisions" (array of strings), "actionItems" (array of objects with "task" string and "assignedTo" string — use "TBD" if not specified), "risks" (array of strings). No markdown, no code blocks, no explanation — pure JSON only.`,
                 },
                 {
-                    role:    "user",
+                    role: "user",
                     content: `Analyze this document:\n\n${truncated}`,
                 },
             ],
@@ -299,59 +298,6 @@ exports.analyzeDocument = async (req, res) => {
     } catch (error) {
         console.error("Document analysis error:", error);
         res.status(500).json({ message: "Document analysis error", error: error.message });
-    }
-};
-
-// ─── CHAT HISTORY ─────────────────────────────────────────────────────────────
-
-// GET /api/chat/history?userName=X
-exports.getChatHistory = async (req, res) => {
-    try {
-        const { userName } = req.query;
-        if (!userName) return res.status(400).json({ message: "userName required" });
-        const record = await ChatHistory.findOne({ userName });
-        res.json({ messages: record?.messages || [] });
-    } catch (err) {
-        res.status(500).json({ message: "Error fetching chat history", error: err.message });
-    }
-};
-
-// POST /api/chat/history/append  — push an array of messages
-exports.appendChatHistory = async (req, res) => {
-    try {
-        const { userName, messages } = req.body;
-        if (!userName || !Array.isArray(messages) || messages.length === 0)
-            return res.status(400).json({ message: "Invalid payload" });
-
-        // Cap total stored messages at 100
-        const record = await ChatHistory.findOne({ userName });
-        const current = record?.messages || [];
-        const combined = [...current, ...messages].slice(-100);
-
-        await ChatHistory.findOneAndUpdate(
-            { userName },
-            { messages: combined },
-            { upsert: true, new: true }
-        );
-        res.json({ ok: true });
-    } catch (err) {
-        res.status(500).json({ message: "Error saving history", error: err.message });
-    }
-};
-
-// DELETE /api/chat/history?userName=X
-exports.clearChatHistory = async (req, res) => {
-    try {
-        const { userName } = req.query;
-        if (!userName) return res.status(400).json({ message: "userName required" });
-        await ChatHistory.findOneAndUpdate(
-            { userName },
-            { messages: [] },
-            { upsert: true }
-        );
-        res.json({ ok: true });
-    } catch (err) {
-        res.status(500).json({ message: "Error clearing history", error: err.message });
     }
 };
 

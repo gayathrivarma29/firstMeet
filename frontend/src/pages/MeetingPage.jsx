@@ -16,37 +16,25 @@ const MeetingPage = () => {
     const [loading, setLoading] = useState(false);
     const [showResults, setShowResults] = useState(false);
 
-    // ── Recording state ──
-    const [isRecording, setIsRecording]       = useState(false);
-    const [liveTranscript, setLiveTranscript] = useState('');
-    const [recordingError, setRecordingError] = useState('');
-    const [recordingSeconds, setRecordingSeconds] = useState(0);
-    const [manualTranscript, setManualTranscript] = useState('');
-    const [showManual, setShowManual]             = useState(false);
-    const recognitionRef     = useRef(null);
-    const timerRef           = useRef(null);
-    const finalTranscriptRef = useRef('');
-    const retryCountRef      = useRef(0);
-    const isStoppingRef      = useRef(false);
-
     // ── Meeting history + notepad state ──
-    const [meetingHistory, setMeetingHistory]     = useState([]);
-    const [selectedMeeting, setSelectedMeeting]   = useState(null);
-    const [noteContent, setNoteContent]           = useState('');
-    const [notePreview, setNotePreview]           = useState(false);
-    const [noteSaving, setNoteSaving]             = useState(false);
-    const [noteSaved, setNoteSaved]               = useState(false);
-    const noteSaveTimer                           = useRef(null);
+    const [meetingHistory, setMeetingHistory] = useState([]);
+    const [selectedMeeting, setSelectedMeeting] = useState(null);
+    const [noteContent, setNoteContent] = useState('');
+    const [notePreview, setNotePreview] = useState(false);
+    const [noteSaving, setNoteSaving] = useState(false);
+    const [noteSaved, setNoteSaved] = useState(false);
+    const noteSaveTimer = useRef(null);
+
     const userName = localStorage.getItem('userName');
     const { pendingFile, setPendingFile, pendingTitle } = usePendingFile();
     const { setPendingMeetings } = useChatMeeting();
 
     // Meeting history multi-select + recap state
-    const [selectMode, setSelectMode]           = useState(false);
-    const [selectedIds, setSelectedIds]         = useState(new Set());
-    const [showRecap, setShowRecap]             = useState(false);
-    const [recapMeetingId, setRecapMeetingId]   = useState(null);
-    const [savedMeetingId, setSavedMeetingId]   = useState(null);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [showRecap, setShowRecap] = useState(false);
+    const [recapMeetingId, setRecapMeetingId] = useState(null);
+    const [savedMeetingId, setSavedMeetingId] = useState(null);
 
     // Auto-trigger if a file was handed off from the ChatAgent
     useEffect(() => {
@@ -57,7 +45,7 @@ const MeetingPage = () => {
         if (pendingTitle) setMeetingTitle(pendingTitle);
         // Small delay to ensure state is settled before triggering submit
         setTimeout(() => onSubmit(f), 150);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Fetch meeting history on mount
@@ -65,7 +53,7 @@ const MeetingPage = () => {
         if (!userName) return;
         api.get(`/api/meetings/${encodeURIComponent(userName)}`)
             .then(res => setMeetingHistory(res.data || []))
-            .catch(() => {});
+            .catch(() => { });
     }, [userName]);
 
     // Open a meeting and load its personal note
@@ -101,7 +89,7 @@ const MeetingPage = () => {
                 // Refresh history to update hasNote flag
                 const res = await api.get(`/api/meetings/${encodeURIComponent(userName)}`);
                 setMeetingHistory(res.data || []);
-            } catch {}
+            } catch { }
             setNoteSaving(false);
         }, 800);
     };
@@ -109,7 +97,7 @@ const MeetingPage = () => {
     const onSubmit = async (fileOverride = null) => {
         const activeFile = fileOverride || file;
         if (!activeFile) {
-            alert("Please upload a transcript file or use the recorder below.");
+            alert("Please upload a transcript file.");
             return;
         }
 
@@ -308,106 +296,6 @@ const MeetingPage = () => {
         setActionItems(prev => prev.filter((_, i) => i !== index));
     };
 
-    // ── Recording functions ──
-    const startRecording = () => {
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRec) {
-            setRecordingError('');
-            setShowManual(true);
-            return;
-        }
-        retryCountRef.current  = 0;
-        isStoppingRef.current  = false;
-        finalTranscriptRef.current = '';
-        setIsRecording(true);
-        setLiveTranscript('');
-        setRecordingError('');
-        setShowManual(false);
-        setRecordingSeconds(0);
-        timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
-
-        const launch = () => {
-            const recognition = new SpeechRec();
-            recognition.continuous     = true;
-            recognition.interimResults = true;
-            recognition.lang           = 'en-US';
-
-            recognition.onresult = (event) => {
-                let interim = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        finalTranscriptRef.current += event.results[i][0].transcript + ' ';
-                    } else {
-                        interim += event.results[i][0].transcript;
-                    }
-                }
-                setLiveTranscript(finalTranscriptRef.current + interim);
-            };
-
-            recognition.onerror = (e) => {
-                if (e.error === 'network' || e.error === 'no-speech') return; // handled in onend
-                const msgs = {
-                    'not-allowed':         '🎤 Microphone access denied — allow it in browser settings.',
-                    'audio-capture':       '🎤 No microphone detected. Please connect one.',
-                    'service-not-allowed': 'Speech service not permitted on this page.',
-                };
-                setRecordingError(msgs[e.error] || `Recognition error: ${e.error}`);
-                isStoppingRef.current = true;
-            };
-
-            recognition.onend = () => {
-                if (isStoppingRef.current) {
-                    setIsRecording(false);
-                    clearInterval(timerRef.current);
-                } else if (retryCountRef.current < 2) {
-                    // Retry up to 2 times silently
-                    retryCountRef.current++;
-                    setTimeout(() => {
-                        if (!isStoppingRef.current) recognitionRef.current = launch();
-                    }, 1000);
-                } else {
-                    // Fall back to manual textarea
-                    setIsRecording(false);
-                    clearInterval(timerRef.current);
-                    setShowManual(true);
-                    setRecordingError('');
-                }
-            };
-
-            try { recognition.start(); } catch {}
-            return recognition;
-        };
-
-        recognitionRef.current = launch();
-    };
-
-    const stopRecording = () => {
-        isStoppingRef.current = true;
-        if (recognitionRef.current) recognitionRef.current.stop();
-        clearInterval(timerRef.current);
-        setIsRecording(false);
-    };
-
-    const analyzeManual = async () => {
-        const text = manualTranscript.trim();
-        if (!text) { alert('Please type or paste your meeting transcript first.'); return; }
-        const blob = new Blob([text], { type: 'text/plain' });
-        const f    = new File([blob], 'manual-transcript.txt', { type: 'text/plain' });
-        setManualTranscript('');
-        setShowManual(false);
-        await onSubmit(f);
-    };
-
-    const analyzeRecording = async () => {
-        const text = (finalTranscriptRef.current || liveTranscript).trim();
-        if (!text) { alert('No transcript captured yet. Please speak during recording.'); return; }
-        const blob = new Blob([text], { type: 'text/plain' });
-        const transcriptFile = new File([blob], 'recording-transcript.txt', { type: 'text/plain' });
-        await onSubmit(transcriptFile);
-    };
-
-    const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-
     return (
         <MainLayout>
             <div className="content-area">
@@ -442,94 +330,6 @@ const MeetingPage = () => {
                             {loading ? "Processing..." : "Generate Insights"}
                         </button>
                     </form>
-                </div>
-
-                {/* ── Recording Section ── */}
-                <div className="task-box glass-card recording-section">
-                    <div className="recording-header">
-                        <h3>🎤 Record Live Meeting</h3>
-                        <p>Speak during your meeting — we'll transcribe and analyze it automatically.</p>
-                    </div>
-
-                    <div className="recording-controls">
-                        {!isRecording ? (
-                            <button className="btn-record" onClick={startRecording} disabled={loading}>
-                                🎤 Start Recording
-                            </button>
-                        ) : (
-                            <button className="btn-record active" onClick={stopRecording}>
-                                ⏹ Stop&nbsp;&nbsp;<span className="rec-timer">{fmt(recordingSeconds)}</span>
-                            </button>
-                        )}
-
-                        {!isRecording && !showManual && (
-                            <button
-                                type="button"
-                                className="btn-record"
-                                style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.82rem', padding: '0.5rem 1rem' }}
-                                onClick={() => { setShowManual(true); setRecordingError(''); }}
-                                disabled={loading}
-                            >
-                                ✍️ Type transcript instead
-                            </button>
-                        )}
-
-                        {liveTranscript && !isRecording && (
-                            <button
-                                className="btn-primary"
-                                onClick={analyzeRecording}
-                                disabled={loading}
-                                style={{ marginLeft: '0.75rem' }}
-                            >
-                                {loading ? 'Analyzing...' : '✨ Analyze Recording'}
-                            </button>
-                        )}
-                    </div>
-
-                    {isRecording && (
-                        <div className="recording-live">
-                            <span className="rec-dot" />
-                            Recording in progress — speak clearly into your microphone
-                        </div>
-                    )}
-
-                    {liveTranscript && (
-                        <div className="transcript-box">
-                            <label className="label-main">Live Transcript</label>
-                            <div className="transcript-text">{liveTranscript}</div>
-                        </div>
-                    )}
-
-                    {/* Manual transcript fallback */}
-                    {showManual && (
-                        <div className="transcript-box" style={{ marginTop: '1rem' }}>
-                            <label className="label-main">📝 Paste or type your meeting transcript</label>
-                            <textarea
-                                className="input-field"
-                                rows={8}
-                                style={{ resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.55', marginTop: '0.5rem' }}
-                                placeholder="Paste your meeting transcript here, then click Analyze..."
-                                value={manualTranscript}
-                                onChange={(e) => setManualTranscript(e.target.value)}
-                            />
-                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
-                                <button className="btn-primary" onClick={analyzeManual} disabled={loading || !manualTranscript.trim()}>
-                                    {loading ? 'Analyzing...' : '✨ Analyze Transcript'}
-                                </button>
-                                <button
-                                    type="button"
-                                    style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-muted)', borderRadius: 'var(--radius-sm)', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.82rem' }}
-                                    onClick={() => { setShowManual(false); setManualTranscript(''); }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {recordingError && (
-                        <p className="recording-error">⚠️ {recordingError}</p>
-                    )}
                 </div>
 
                 {showResults && (
