@@ -4,12 +4,14 @@ const User = require("../models/user");
 
 exports.createTask = async (req, res) => {
     try {
-        const { title, userName, assignedTo, assignedBy, deadline, isAssigned, priority } = req.body;
+        const { title, assignedTo, assignedBy, deadline, isAssigned, priority } = req.body;
+        // Use req.user.userName as the creator
+        const userName = req.user.userName;
         const newTask = new Task({
             title,
             userName,
             assignedTo,
-            assignedBy,
+            assignedBy: assignedBy || userName, // Default to creator if not provided
             deadline,
             isAssigned: isAssigned !== undefined ? isAssigned : false,
             priority: priority || "MEDIUM"
@@ -25,9 +27,8 @@ exports.createTask = async (req, res) => {
 
 exports.getUnassignedTasks = async (req, res) => {
     try {
-        const { userName } = req.query;
         const filter = { isAssigned: false };
-        if (userName) filter.userName = userName;
+        // Optional: filter by company/user if needed, but usually unassigned is global for the team
         const tasks = await Task.find(filter);
         res.json(tasks);
     } catch (error) {
@@ -38,7 +39,7 @@ exports.getUnassignedTasks = async (req, res) => {
 
 exports.getTasksByUser = async (req, res) => {
     try {
-        const { username } = req.params;
+        const username = req.user.userName;
         const tasks = await Task.find({ assignedTo: username, isAssigned: true, isCompleted: false });
         res.json(tasks);
     } catch (error) {
@@ -49,7 +50,7 @@ exports.getTasksByUser = async (req, res) => {
 
 exports.getTasksByCreator = async (req, res) => {
     try {
-        const { userName } = req.params;
+        const userName = req.user.userName;
         const tasks = await Task.find({ userName }).sort({ createdAt: -1 });
         res.json(tasks);
     } catch (error) {
@@ -112,7 +113,7 @@ exports.completeTask = async (req, res) => {
 
 exports.getCompletedTasks = async (req, res) => {
     try {
-        const { username } = req.params;
+        const username = req.user.userName;
         const tasks = await Task.find({ assignedTo: username, isCompleted: true }).sort({ updatedAt: -1 });
         res.json(tasks);
     } catch (error) {

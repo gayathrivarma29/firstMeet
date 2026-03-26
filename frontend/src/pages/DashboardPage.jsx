@@ -9,58 +9,36 @@ import MainLayout from '../components/MainLayout';
 import { getGreeting } from '../utils/greetings';
 import '../styles/dashboard.css';
 
-// ─── Animated counter hook ───────────────────────────────────────────────────
-function useCountUp(target, duration = 1200) {
-    const [count, setCount] = useState(0);
-    useEffect(() => {
-        if (target === undefined || target === null) return;
-        const numTarget = parseFloat(String(target).replace(/[^0-9.]/g, '')) || 0;
-        let start = null;
-        const tick = (timestamp) => {
-            if (!start) start = timestamp;
-            const progress = Math.min((timestamp - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(eased * numTarget));
-            if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-    }, [target, duration]);
-    return count;
-}
 
-// ─── Theme-aligned color palette ─────────────────────────────────────────────
 const C = {
-    blue:   '#0D99FF',
-    green:  '#30D158',
-    gold:   '#FF9F0A',
-    rose:   '#FF453A',
+    blue: '#0D99FF',
+    green: '#30D158',
+    gold: '#FF9F0A',
+    rose: '#FF453A',
     purple: '#BF5AF2',
-    cyan:   '#5AC8FA',
+    cyan: '#5AC8FA',
 };
 
-// ─── Focus Ring SVG ──────────────────────────────────────────────────────────
 const FocusRing = ({ score }) => {
     const radius = 52;
-    const circ   = 2 * Math.PI * radius;
+    const circ = 2 * Math.PI * radius;
     const offset = circ - (Math.min(score, 100) / 100) * circ;
-    const color  = score >= 70 ? C.green : score >= 40 ? C.gold : C.rose;
+    const color = score >= 70 ? C.green : score >= 40 ? C.gold : C.rose;
     return (
         <svg width="130" height="130" viewBox="0 0 130 130" style={{ display: 'block', margin: '0.5rem auto 0' }}>
             <circle cx="65" cy="65" r={radius} fill="none" stroke="var(--border-color)" strokeWidth="9" />
             <circle cx="65" cy="65" r={radius} fill="none"
                 stroke={color} strokeWidth="9" strokeLinecap="round"
                 strokeDasharray={circ} strokeDashoffset={offset}
-                transform="rotate(-90 65 65)"
-                style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)' }} />
+                transform="rotate(-90 65 65)" />
             <text x="65" y="61" textAnchor="middle" fontSize="24" fontWeight="600" fill="var(--text-main)">{score}</text>
-            <text x="65" y="77" textAnchor="middle" fontSize="9"  fontWeight="600" fill="var(--text-muted)" letterSpacing="0.08em">FOCUS %</text>
+            <text x="65" y="77" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--text-muted)" letterSpacing="0.08em">FOCUS %</text>
         </svg>
     );
 };
 
-// ─── KPI Card ────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, suffix = '', color, badge }) {
-    const num = useCountUp(typeof value === 'number' ? value : 0);
+    const num = typeof value === 'number' ? value : 0;
     return (
         <div className="kpi-card" style={color ? { borderLeftColor: color } : {}}>
             <span className="kpi-label">{label}</span>
@@ -69,8 +47,8 @@ function KpiCard({ label, value, suffix = '', color, badge }) {
                 {suffix && <sub style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '0.2rem' }}>{suffix}</sub>}
                 {badge !== undefined && (
                     <span className="kpi-badge" style={{
-                        color:       badge >= 0 ? C.green : C.rose,
-                        background:  badge >= 0 ? 'rgba(48,209,88,0.12)' : 'rgba(255,69,58,0.12)',
+                        color: badge >= 0 ? C.green : C.rose,
+                        background: badge >= 0 ? 'rgba(48,209,88,0.12)' : 'rgba(255,69,58,0.12)',
                     }}>
                         {badge >= 0 ? '▲' : '▼'} {Math.abs(badge)}%
                     </span>
@@ -80,7 +58,7 @@ function KpiCard({ label, value, suffix = '', color, badge }) {
     );
 }
 
-// ─── Custom Recharts Tooltip ──────────────────────────────────────────────────
+// ─── Custom Recharts Tooltip ─────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     return (
@@ -103,18 +81,18 @@ const axisStyle = { fontSize: 10, fill: 'var(--text-muted)', fontWeight: 600, fo
 const RANK_BADGES = ['🥇', '🥈', '🥉'];
 const RANGES = [{ label: 'Last 7d', value: '7' }, { label: 'Last 30d', value: '30' }, { label: 'Last 90d', value: '90' }, { label: 'All time', value: 'all' }];
 
-// ─── Wins Helpers ────────────────────────────────────────────────────────────
+
 const computeTeamWins = (stats) => {
     const completedThisWeek = stats.charts.teamVelocity?.at(-1)?.completed ?? 0;
-    const rate    = stats.kpis.completionRate ?? 0;
+    const rate = stats.kpis.completionRate ?? 0;
     const meetings = stats.kpis.totalMeetings ?? 0;
-    const top     = stats.charts.memberMatrix?.[0];
+    const top = stats.charts.memberMatrix?.[0];
     const wins = [
         {
             icon: '✅',
             value: completedThisWeek,
             label: 'Tasks Completed This Week',
-            message: completedThisWeek > 10 ? 'Incredible output — crushing it! 🚀' : completedThisWeek > 0 ? 'Good momentum — keep going! 💪' : 'Every big sprint starts with one task.',
+            message: completedThisWeek > 10 ? 'Incredible output — crushing it! ' : completedThisWeek > 0 ? 'Good momentum — keep going! 💪' : 'Every big sprint starts with one task.',
             color: '#30D158',
         },
         {
@@ -143,16 +121,16 @@ const computeTeamWins = (stats) => {
 };
 
 const computePersonalWins = (stats) => {
-    const completedThisWeek = stats.kpis.completedThisWeek  ?? 0;
-    const focusScore        = stats.kpis.personalFocusScore ?? 0;
-    const streak            = stats.kpis.streak             ?? 0;
-    const meetings          = stats.kpis.meetingsAttended   ?? 0;
+    const completedThisWeek = stats.kpis.completedThisWeek ?? 0;
+    const focusScore = stats.kpis.personalFocusScore ?? 0;
+    const streak = stats.kpis.streak ?? 0;
+    const meetings = stats.kpis.meetingsAttended ?? 0;
     return [
         {
             icon: '✅',
             value: completedThisWeek,
             label: 'Tasks Completed This Week',
-            message: completedThisWeek > 5 ? "You're on fire — amazing productivity! 🚀" : completedThisWeek > 0 ? 'Great start — keep the momentum! 💪' : 'Today is a great day to start!',
+            message: completedThisWeek > 5 ? "You're on fire — amazing productivity! " : completedThisWeek > 0 ? 'Great start — keep the momentum! 💪' : 'Today is a great day to start!',
             color: '#30D158',
         },
         {
@@ -181,7 +159,7 @@ const computePersonalWins = (stats) => {
 
 const StatsTicker = ({ stats, isTeam }) => {
     const wins = isTeam ? computeTeamWins(stats) : computePersonalWins(stats);
-    const [idx, setIdx]       = useState(0);
+    const [idx, setIdx] = useState(0);
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
@@ -224,16 +202,16 @@ const StatsTicker = ({ stats, isTeam }) => {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 const DashboardPage = () => {
-    const [loading, setLoading]           = useState(true);
-    const [stats,   setStats]             = useState(null);
-    const [range,   setRange]             = useState('all');
-    const [digest,  setDigest]            = useState('');
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState(null);
+    const [range, setRange] = useState('all');
+    const [digest, setDigest] = useState('');
     const [digestLoading, setDigestLoading] = useState(false);
-    const [viewMode, setViewMode]           = useState('team'); // 'team' | 'personal'
+    const [viewMode, setViewMode] = useState('team'); // 'team' | 'personal'
 
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName') || 'there';
-    const isAdmin  = userRole === 'admin';
+    const isAdmin = userRole === 'admin';
     const [greeting] = useState(() => getGreeting(userName));
 
     const fetchStats = useCallback(async () => {
@@ -242,7 +220,7 @@ const DashboardPage = () => {
         try {
             const usePersonal = !isAdmin || viewMode === 'personal';
             const endpoint = usePersonal
-                ? `/api/analytics/employee?userName=${encodeURIComponent(userName)}&range=${range}`
+                ? `/api/analytics/employee?range=${range}`
                 : `/api/analytics/admin?range=${range}`;
             const response = await api.get(endpoint);
             setStats(response.data);
@@ -268,7 +246,7 @@ const DashboardPage = () => {
     };
 
     if (loading) return <MainLayout><div className="loading-container">Loading your data...</div></MainLayout>;
-    if (!stats)  return <MainLayout><div className="loading-container">Could not load stats. Please refresh.</div></MainLayout>;
+    if (!stats) return <MainLayout><div className="loading-container">Could not load stats. Please refresh.</div></MainLayout>;
 
     return (
         <MainLayout>
@@ -281,8 +259,8 @@ const DashboardPage = () => {
                             <h1>{greeting}</h1>
                             <p className="dashboard-subtitle">
                                 {isAdmin && viewMode === 'team'
-                                    ? '📊 Company-wide analytics at a glance'
-                                    : '📈 Your personal performance snapshot'}
+                                    ? 'Company-wide analytics at a glance'
+                                    : 'Your personal performance snapshot'}
                             </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -292,13 +270,13 @@ const DashboardPage = () => {
                                         className={`view-toggle-btn${viewMode === 'team' ? ' active' : ''}`}
                                         onClick={() => { setViewMode('team'); setStats(null); }}
                                     >
-                                        🏢 Team
+                                        Team
                                     </button>
                                     <button
                                         className={`view-toggle-btn${viewMode === 'personal' ? ' active' : ''}`}
                                         onClick={() => { setViewMode('personal'); setStats(null); }}
                                     >
-                                        👤 My View
+                                        My View
                                     </button>
                                 </div>
                             )}
@@ -317,7 +295,7 @@ const DashboardPage = () => {
                 {isAdmin && viewMode === 'team' && (
                     <div className="digest-card">
                         <div className="digest-left">
-                            <span className="digest-icon">🤖</span>
+                            <span className="digest-icon"></span>
                             <div>
                                 <div className="digest-label">AI Weekly Digest</div>
                                 <p className="digest-text">
@@ -339,25 +317,25 @@ const DashboardPage = () => {
                 <div className="kpi-row">
                     {isAdmin && viewMode === 'team' ? (
                         <>
-                            <KpiCard label="Total Meetings"  value={stats.kpis.totalMeetings} />
-                            <KpiCard label="Success Score"   value={stats.kpis.effectivenessScore} suffix="/100" color={C.blue} />
-                            <KpiCard label="Team Balance"    value={stats.kpis.globalFocusScore}   suffix="%"    color={C.gold} />
-                            <KpiCard label="Completion Rate" value={stats.kpis.completionRate}      suffix="%"    color={C.green} />
-                            <KpiCard label="Monthly Growth"  value={Math.abs(stats.kpis.monthlyGrowth)} suffix="%" color={stats.kpis.monthlyGrowth >= 0 ? C.cyan : C.rose} badge={stats.kpis.monthlyGrowth} />
+                            <KpiCard label="Total Meetings" value={stats.kpis.totalMeetings} />
+                            {/* <KpiCard label="Success Score" value={stats.kpis.effectivenessScore} suffix="/100" color={C.blue} /> */}
+                            {/* <KpiCard label="Team Balance" value={stats.kpis.globalFocusScore} suffix="%" color={C.gold} /> */}
+                            <KpiCard label="Completion Rate" value={stats.kpis.completionRate} suffix="%" color={C.green} />
+                            <KpiCard label="Monthly Growth" value={Math.abs(stats.kpis.monthlyGrowth)} suffix="%" color={stats.kpis.monthlyGrowth >= 0 ? C.cyan : C.rose} badge={stats.kpis.monthlyGrowth} />
                         </>
                     ) : (
                         <>
-                            <KpiCard label="Pending Tasks"   value={stats.kpis.openTasks} />
-                            <KpiCard label="Day Streak"      value={stats.kpis.streak}           suffix=" days" color={C.gold} />
-                            <KpiCard label="Completion Rate" value={stats.kpis.completedRatio}   suffix="%"     color={C.green} />
-                            <KpiCard label="Points Earned"   value={stats.kpis.personalImpact}                  color={C.blue} />
-                            <KpiCard label="Meetings"        value={stats.kpis.meetingsAttended || 0}            color={C.purple} />
+                            <KpiCard label="Pending Tasks" value={stats.kpis.openTasks} />
+                            {/* <KpiCard label="Day Streak" value={stats.kpis.streak} suffix=" days" color={C.gold} /> */}
+                            <KpiCard label="Completion Rate" value={stats.kpis.completedRatio} suffix="%" color={C.green} />
+                            {/* <KpiCard label="Points Earned" value={stats.kpis.personalImpact} color={C.blue} /> */}
+                            <KpiCard label="Meetings" value={stats.kpis.meetingsAttended || 0} color={C.purple} />
                         </>
                     )}
                 </div>
 
-                {/* ── Stats Ticker ── */}
-                <StatsTicker stats={stats} isTeam={isAdmin && viewMode === 'team'} />
+                {/* ── Stats Ticker ──
+                <StatsTicker stats={stats} isTeam={isAdmin && viewMode === 'team'} /> */}
 
                 {/* ── Charts Grid ── */}
                 <div className="dashboard-grid">
@@ -370,19 +348,19 @@ const DashboardPage = () => {
                                     <AreaChart data={stats.charts.lifecycle || []}>
                                         <defs>
                                             <linearGradient id="gc" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.blue}  stopOpacity={0.15} />
-                                                <stop offset="95%" stopColor={C.blue}  stopOpacity={0} />
+                                                <stop offset="5%" stopColor={C.blue} stopOpacity={0.15} />
+                                                <stop offset="95%" stopColor={C.blue} stopOpacity={0} />
                                             </linearGradient>
                                             <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.green} stopOpacity={0.15} />
+                                                <stop offset="5%" stopColor={C.green} stopOpacity={0.15} />
                                                 <stop offset="95%" stopColor={C.green} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
                                         <XAxis dataKey="date" hide />
                                         <YAxis hide />
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Area type="monotone" name="Created"  dataKey="created"  stroke={C.blue}  strokeWidth={2.5} fill="url(#gc)" />
-                                        <Area type="monotone" name="Resolved" dataKey="resolved" stroke={C.green} strokeWidth={2.5} fill="url(#gr)" />
+                                        <Area type="monotone" name="Created" dataKey="created" stroke={C.blue} strokeWidth={2.5} fill="url(#gc)" isAnimationActive={false} />
+                                        <Area type="monotone" name="Resolved" dataKey="resolved" stroke={C.green} strokeWidth={2.5} fill="url(#gr)" isAnimationActive={false} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
@@ -393,7 +371,7 @@ const DashboardPage = () => {
                                 <div className="matrix-table-container">
                                     <table className="matrix-table">
                                         <thead>
-                                            <tr><th>#</th><th>MEMBER</th><th>YIELD</th><th>PENDING</th></tr>
+                                            <tr><th>#</th><th>MEMBER</th><th>COMPLETED</th><th>PENDING</th></tr>
                                         </thead>
                                         <tbody>
                                             {(stats.charts.memberMatrix || []).map((m, i) => (
@@ -403,7 +381,7 @@ const DashboardPage = () => {
                                                     <td>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                             <div style={{ flex: 1, height: '4px', background: 'var(--border-color)', borderRadius: '2px', overflow: 'hidden', minWidth: '50px' }}>
-                                                                <div style={{ width: `${m.ratio}%`, height: '100%', background: m.ratio >= 70 ? C.green : m.ratio >= 40 ? C.gold : C.rose, borderRadius: '2px', transition: 'width 1s ease' }} />
+                                                                <div style={{ width: `${m.ratio}%`, height: '100%', background: m.ratio >= 70 ? C.green : m.ratio >= 40 ? C.gold : C.rose, borderRadius: '2px' }} />
                                                             </div>
                                                             <div className="yield-pill" style={{ background: m.ratio >= 70 ? 'rgba(48,209,88,0.12)' : 'rgba(255,69,58,0.12)', color: m.ratio >= 70 ? C.green : C.rose }}>
                                                                 {m.ratio}%
@@ -423,7 +401,7 @@ const DashboardPage = () => {
                                 <h3>Priority Distribution</h3>
                                 <ResponsiveContainer width="100%" height={260}>
                                     <PieChart>
-                                        <Pie data={stats.charts.priorityDistribution || []} innerRadius={60} outerRadius={90} paddingAngle={6} dataKey="value">
+                                        <Pie data={stats.charts.priorityDistribution || []} innerRadius={60} outerRadius={90} paddingAngle={6} dataKey="value" isAnimationActive={false}>
                                             <Cell fill={C.rose} />
                                             <Cell fill={C.gold} />
                                             <Cell fill={C.green} />
@@ -434,14 +412,14 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Team Velocity */}
+                            {/* Team Velocity
                             <div className="chart-card">
                                 <h3>Team Velocity</h3>
                                 <ResponsiveContainer width="100%" height={260}>
                                     <AreaChart data={stats.charts.teamVelocity || []}>
                                         <defs>
                                             <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.purple} stopOpacity={0.15} />
+                                                <stop offset="5%" stopColor={C.purple} stopOpacity={0.15} />
                                                 <stop offset="95%" stopColor={C.purple} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
@@ -451,17 +429,17 @@ const DashboardPage = () => {
                                         <Area type="monotone" name="Completed" dataKey="completed" stroke={C.purple} strokeWidth={2.5} fill="url(#gv)" />
                                     </AreaChart>
                                 </ResponsiveContainer>
-                            </div>
+                            </div> */}
 
                             {/* Stale Tasks */}
                             <div className="chart-card">
-                                <h3>Stale Open Tasks</h3>
+                                <h3>Pending Tasks</h3>
                                 <ResponsiveContainer width="100%" height={260}>
                                     <BarChart data={stats.charts.staleTaskBuckets || []} layout="vertical">
                                         <XAxis type="number" hide />
                                         <YAxis dataKey="label" type="category" tick={axisStyle} tickLine={false} axisLine={false} width={72} />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="count" name="Tasks" radius={[0, 6, 6, 0]} barSize={28}>
+                                        <Bar dataKey="count" name="Tasks" radius={[0, 6, 6, 0]} barSize={28} isAnimationActive={false}>
                                             {(stats.charts.staleTaskBuckets || []).map((_, idx) => (
                                                 <Cell key={idx} fill={[C.gold, C.rose, C.purple][idx]} />
                                             ))}
@@ -470,7 +448,7 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Action Item Load */}
+                            {/* Action Item Load
                             <div className="chart-card">
                                 <h3>Action Item Load</h3>
                                 <ResponsiveContainer width="100%" height={260}>
@@ -478,12 +456,40 @@ const DashboardPage = () => {
                                         <XAxis type="number" hide />
                                         <YAxis dataKey="name" type="category" tick={{ ...axisStyle, fontSize: 9 }} tickLine={false} axisLine={false} width={88} />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="assigned"  name="Assigned"  fill={C.blue}  radius={[0, 4, 4, 0]} barSize={9} />
+                                        <Bar dataKey="assigned" name="Assigned" fill={C.blue} radius={[0, 4, 4, 0]} barSize={9} />
                                         <Bar dataKey="completed" name="Completed" fill={C.green} radius={[0, 4, 4, 0]} barSize={9} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div> */}
+
+
+                            {/* Meeting Frequency */}
+                            <div className="chart-card">
+                                <h3>Meeting Frequency</h3>
+                                <ResponsiveContainer width="100%" height={240}>
+                                    <BarChart data={stats.charts.meetingsByWeek || []}>
+                                        <XAxis dataKey="week" tick={axisStyle} tickLine={false} axisLine={false} />
+                                        <YAxis hide />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
+                                        <Bar dataKey="count" fill={C.cyan} radius={[6, 6, 0, 0]} barSize={26} name="Meetings" isAnimationActive={false} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
 
+                            {/* Jira vs Local */}
+                            <div className="chart-card">
+                                <h3>Jira vs Local Tasks</h3>
+                                <ResponsiveContainer width="100%" height={240}>
+                                    <PieChart>
+                                        <Pie data={stats.charts.jiraVsLocal || []} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={5} dataKey="value" isAnimationActive={false}>
+                                            <Cell fill={C.blue} />
+                                            <Cell fill={C.purple} />
+                                        </Pie>
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                             {/* Urgent Tasks */}
                             <div className="chart-card full-width">
                                 <h3>🔴 Urgent Tasks</h3>
@@ -505,47 +511,19 @@ const DashboardPage = () => {
                                     }
                                 </div>
                             </div>
-
-                            {/* Meeting Frequency */}
-                            <div className="chart-card">
-                                <h3>Meeting Frequency</h3>
-                                <ResponsiveContainer width="100%" height={240}>
-                                    <BarChart data={stats.charts.meetingsByWeek || []}>
-                                        <XAxis dataKey="week" tick={axisStyle} tickLine={false} axisLine={false} />
-                                        <YAxis hide />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="count" fill={C.cyan} radius={[6, 6, 0, 0]} barSize={26} name="Meetings" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            {/* Jira vs Local */}
-                            <div className="chart-card">
-                                <h3>Jira vs Local Tasks</h3>
-                                <ResponsiveContainer width="100%" height={240}>
-                                    <PieChart>
-                                        <Pie data={stats.charts.jiraVsLocal || []} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={5} dataKey="value">
-                                            <Cell fill={C.blue} />
-                                            <Cell fill={C.purple} />
-                                        </Pie>
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
                         </>
                     ) : (
                         <>
-                            {/* Focus Ring */}
+                            {/* Focus Ring
                             <div className="chart-card" style={{ alignItems: 'center' }}>
                                 <h3>Weekly Focus Score</h3>
                                 <FocusRing score={stats.kpis.personalFocusScore || 0} />
                                 <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
                                     {stats.kpis.completedThisWeek || 0} of {stats.kpis.assignedThisWeek || 0} tasks completed this week
                                 </p>
-                            </div>
+                            </div> */}
 
-                            {/* Work Skills Radar */}
+                            {/* Work Skills Radar
                             <div className="chart-card">
                                 <h3>Work Skills</h3>
                                 <ResponsiveContainer width="100%" height={280}>
@@ -557,7 +535,7 @@ const DashboardPage = () => {
                                         <Tooltip content={<CustomTooltip />} />
                                     </RadarChart>
                                 </ResponsiveContainer>
-                            </div>
+                            </div> */}
 
                             {/* Weekly Work */}
                             <div className="chart-card">
@@ -567,12 +545,12 @@ const DashboardPage = () => {
                                         <XAxis dataKey="day" tick={axisStyle} tickLine={false} axisLine={false} />
                                         <YAxis hide />
                                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="count" fill={C.green} radius={[6, 6, 0, 0]} barSize={36} name="Tasks" />
+                                        <Bar dataKey="count" fill={C.green} radius={[6, 6, 0, 0]} barSize={36} name="Tasks" isAnimationActive={false} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Priority Mix */}
+                            {/* Priority Mix
                             <div className="chart-card">
                                 <h3>Priority Mix</h3>
                                 <ResponsiveContainer width="100%" height={260}>
@@ -586,29 +564,8 @@ const DashboardPage = () => {
                                         <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
-                            </div>
+                            </div> */}
 
-                            {/* Upcoming Tasks */}
-                            <div className="chart-card full-width">
-                                <h3>📅 Upcoming Tasks</h3>
-                                <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-                                    {(stats.charts.upcomingDeadlines || []).length > 0
-                                        ? (stats.charts.upcomingDeadlines || []).map(task => (
-                                            <div key={task._id} className="urgent-task-item">
-                                                <div>
-                                                    <div className="urgent-task-title">{task.title}</div>
-                                                    <div className="urgent-task-meta">Status: Active</div>
-                                                </div>
-                                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                                    <div style={{ color: C.gold, fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.2rem' }}>DUE</div>
-                                                    <div className="urgent-task-meta">{task.deadline}</div>
-                                                </div>
-                                            </div>
-                                        ))
-                                        : <p style={{ color: 'var(--text-muted)' }}>Your roadmap is clear. 🎉</p>
-                                    }
-                                </div>
-                            </div>
 
                             {/* 7-Day Throughput */}
                             <div className="chart-card">
@@ -617,14 +574,14 @@ const DashboardPage = () => {
                                     <AreaChart data={stats.charts.throughput || []}>
                                         <defs>
                                             <linearGradient id="gtp" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={C.purple} stopOpacity={0.18} />
+                                                <stop offset="5%" stopColor={C.purple} stopOpacity={0.18} />
                                                 <stop offset="95%" stopColor={C.purple} stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
                                         <XAxis dataKey="date" tick={axisStyle} tickLine={false} axisLine={false} />
                                         <YAxis hide />
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Area type="monotone" name="Completed" dataKey="count" stroke={C.purple} strokeWidth={2.5} fill="url(#gtp)" />
+                                        <Area type="monotone" name="Completed" dataKey="count" stroke={C.purple} strokeWidth={2.5} fill="url(#gtp)" isAnimationActive={false} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
@@ -644,6 +601,27 @@ const DashboardPage = () => {
                                             </div>
                                         ))
                                         : <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No meetings recorded yet.</p>
+                                    }
+                                </div>
+                            </div>
+                            {/* Upcoming Tasks */}
+                            <div className="chart-card full-width">
+                                <h3>📅 Upcoming Tasks</h3>
+                                <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+                                    {(stats.charts.upcomingDeadlines || []).length > 0
+                                        ? (stats.charts.upcomingDeadlines || []).map(task => (
+                                            <div key={task._id} className="urgent-task-item">
+                                                <div>
+                                                    <div className="urgent-task-title">{task.title}</div>
+                                                    <div className="urgent-task-meta">Status: Active</div>
+                                                </div>
+                                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                                    <div style={{ color: C.gold, fontSize: '0.7rem', fontWeight: 700, marginBottom: '0.2rem' }}>DUE</div>
+                                                    <div className="urgent-task-meta">{task.deadline}</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                        : <p style={{ color: 'var(--text-muted)' }}>Your roadmap is clear. 🎉</p>
                                     }
                                 </div>
                             </div>

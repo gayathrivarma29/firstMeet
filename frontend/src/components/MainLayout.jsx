@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/homePage.css';
-import { useTheme } from '../context/ThemeContext';
 
-/* ─── Heroicons outline SVGs (inline, 18×18) ─── */
+
+
 const Icons = {
     analytics: (
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
@@ -41,7 +41,7 @@ const NAV_ITEMS = [
     { label: 'Email', path: '/email', icon: Icons.email },
 ];
 
-// ─── About Modal ──────────────────────────────────────────────────────────────────────────────
+
 const ABOUT_FEATURES = [
     { title: '🤖 AI Meeting Minutes', color: '#0D99FF', items: ['Upload TXT/DOCX transcripts → AI summary in seconds', 'Speaker attribution, key decisions extracted', 'Action items with HIGH / MEDIUM / LOW priority scoring'] },
     { title: '✅ Smart Task Management', color: '#FF9F0A', items: ['Tasks auto-created from meeting action items', 'Assign to members with deadlines & priority', 'Full lifecycle: Pending → Assigned → Completed'] },
@@ -57,7 +57,7 @@ const TECH_STACK = ['React 18', 'Vite', 'Node.js', 'Express', 'MongoDB Atlas', '
 const AboutModal = ({ onClose }) => createPortal(
     <div className="about-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="about-modal">
-            {/* Minimal Header */}
+
             <div className="about-hero">
                 <div className="about-hero-inner">
                     <div className="about-hero-logo">M</div>
@@ -71,7 +71,7 @@ const AboutModal = ({ onClose }) => createPortal(
                 <button type="button" className="about-close" onClick={onClose}>✕</button>
             </div>
 
-            {/* Feature Cards */}
+
             <div className="about-body">
                 <div className="about-features-grid">
                     {ABOUT_FEATURES.map((f, i) => (
@@ -82,7 +82,7 @@ const AboutModal = ({ onClose }) => createPortal(
                     ))}
                 </div>
 
-                {/* Tech Stack */}
+
                 <div className="about-tech-section">
                     <div className="about-tech-label">Tech Stack</div>
                     <div className="about-tech-pills">
@@ -101,8 +101,8 @@ const MainLayout = ({ children, activeTab, setActiveTab }) => {
     const userName = localStorage.getItem('userName');
     const userRole = localStorage.getItem('userRole');
     const isEmployee = userRole === 'employee';
-    const { theme, toggleTheme } = useTheme();
-    const isDark = theme === 'dark';
+
+
     const [showAbout, setShowAbout] = useState(false);
 
     const handleLogout = () => {
@@ -134,7 +134,7 @@ const MainLayout = ({ children, activeTab, setActiveTab }) => {
         <>
             <div className="home-layout">
                 <aside className="sidebar">
-                    {/* Brand */}
+
                     <div className="sidebar-brand">
                         <div className="sidebar-logo-mark">M</div>
                         <span className="sidebar-title">MeetUp</span>
@@ -148,7 +148,7 @@ const MainLayout = ({ children, activeTab, setActiveTab }) => {
                         </button>
                     </div>
 
-                    {/* Navigation */}
+
                     <nav className="sidebar-nav">
                         <span className="sidebar-section-label">Menu</span>
                         {NAV_ITEMS.map((item, i) => (
@@ -177,7 +177,7 @@ const MainLayout = ({ children, activeTab, setActiveTab }) => {
                         )}
                     </nav>
 
-                    {/* Footer */}
+
                     <div className="sidebar-footer">
 
                         <div className="sidebar-user">

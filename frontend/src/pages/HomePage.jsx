@@ -18,9 +18,9 @@ const HomePage = () => {
     const tasksPerPage = 10;
 
     // History tab: multi-select + recap
-    const [selectMode, setSelectMode]         = useState(false);
-    const [selectedIds, setSelectedIds]       = useState(new Set());
-    const [showRecap, setShowRecap]           = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [showRecap, setShowRecap] = useState(false);
     const [recapMeetingId, setRecapMeetingId] = useState(null);
     const { setPendingMeetings } = useChatMeeting();
 
@@ -46,9 +46,9 @@ const HomePage = () => {
             }
             try {
                 const [assignedRes, unassignedRes, meetingsRes] = await Promise.all([
-                    api.get(`/api/tasks/assigned/${userName}`),
-                    api.get(`/api/tasks/unassigned?userName=${userName}`),
-                    api.get(`/api/meetings/${userName}`),
+                    api.get(`/api/tasks/my-assigned`),
+                    api.get(`/api/tasks/unassigned`),
+                    api.get(`/api/meetings/my`),
                 ]);
                 setAssignedTasks(assignedRes.data);
                 setUnassignedTasks(unassignedRes.data);
@@ -76,8 +76,8 @@ const HomePage = () => {
         try {
             await api.patch(`/api/tasks/assign/${taskId}`, { assignedTo: userName });
             const [assignedRes, unassignedRes] = await Promise.all([
-                api.get(`/api/tasks/assigned/${userName}`),
-                api.get(`/api/tasks/unassigned?userName=${userName}`),
+                api.get(`/api/tasks/my-assigned`),
+                api.get(`/api/tasks/unassigned`),
             ]);
             setAssignedTasks(assignedRes.data);
             setUnassignedTasks(unassignedRes.data);
@@ -90,7 +90,7 @@ const HomePage = () => {
         const userName = localStorage.getItem('userName');
         try {
             await api.patch(`/api/tasks/complete/${taskId}`);
-            const assignedRes = await api.get(`/api/tasks/assigned/${userName}`);
+            const assignedRes = await api.get(`/api/tasks/my-assigned`);
             setAssignedTasks(assignedRes.data);
         } catch (error) {
             console.error("Error completing task:", error);
@@ -104,7 +104,7 @@ const HomePage = () => {
         const userName = localStorage.getItem('userName');
         try {
             await api.delete(`/api/tasks/${taskId}`);
-            const unassignedRes = await api.get(`/api/tasks/unassigned?userName=${userName}`);
+            const unassignedRes = await api.get(`/api/tasks/unassigned`);
             setUnassignedTasks(unassignedRes.data);
         } catch (error) {
             console.error("Error deleting task:", error);
@@ -123,8 +123,8 @@ const HomePage = () => {
                 assignedToText: task.assignedTo,
             });
             const [assignedRes, unassignedRes] = await Promise.all([
-                api.get(`/api/tasks/assigned/${userName}`),
-                api.get(`/api/tasks/unassigned?userName=${userName}`),
+                api.get(`/api/tasks/my-assigned`),
+                api.get(`/api/tasks/unassigned`),
             ]);
             setAssignedTasks(assignedRes.data);
             setUnassignedTasks(unassignedRes.data);

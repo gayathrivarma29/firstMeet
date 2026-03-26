@@ -100,7 +100,6 @@ button:active {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
     border-left: 5px solid #3a6ea5;
-    animation: fadeIn 0.5s ease-in-out;
 }
 
 .result-card h2 {

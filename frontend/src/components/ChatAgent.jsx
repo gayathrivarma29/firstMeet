@@ -5,43 +5,36 @@ import { usePendingFile } from '../context/PendingFileContext.jsx';
 import { useChatMeeting } from '../context/ChatMeetingContext.jsx';
 import '../styles/chatAgent.css';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const CHIPS = [
-    { label: '📅 My Meetings', text: 'show my meetings' },
-    { label: '✅ My Tasks', text: 'show my tasks' },
-    { label: '📊 My Analytics', text: 'show my analytics' },
-    { label: '📝 Weekly Digest', text: 'generate weekly digest' },
-    { label: '🏢 Team Stats', text: 'show team performance' },
-    { label: '✔️ Completed', text: 'show my completed tasks' },
-    { label: '🗣️ Meeting Q&A', text: 'ask questions about a meeting' },
-    { label: '🔍 Search...', special: 'search' },
-    { label: '📄 Attach Doc', special: 'doc' },
+    { label: 'My Meetings', text: 'show my meetings' },
+    { label: 'My Tasks', text: 'show my tasks' },
+    { label: 'My Analytics', text: 'show my analytics' },
+    { label: 'Weekly Digest', text: 'generate weekly digest' },
+    { label: 'Team Stats', text: 'show team performance' },
+    { label: 'Completed', text: 'show my completed tasks' },
+    { label: 'Meeting Q&A', text: 'ask questions about a meeting' },
+    { label: 'Search...', special: 'search' },
+    { label: 'Attach Doc', special: 'doc' },
 ];
 
-// Floating hint chips shown near the FAB when the panel is closed
 const FAB_HINTS = [
-    { label: '📊 My Analytics', text: 'show my analytics' },
-    { label: '✅ My Tasks', text: 'show my tasks' },
-    { label: '📅 My Meetings', text: 'show my meetings' },
+    { label: 'My Analytics', text: 'show my analytics' },
+    { label: 'My Tasks', text: 'show my tasks' },
+    { label: 'My Meetings', text: 'show my meetings' },
 ];
 
-const WELCOME = `Hi! I'm **FirstMeet AI** 👋
+const WELCOME = `Hi! I'm AI 
 
 I can help you with:
-• 📅 Meeting history & summaries
-• ✅ Tasks & deadlines
-• 📊 Personal & team analytics
-• �️ Ask questions about any meeting
-• 📄 Document Q&A & full insights
-• 🔍 Search across all your meetings
-
-Try a quick action below, or just ask me anything!`;
+• Meeting history & summaries
+• Tasks & deadlines
+• Personal & team analytics
+• Ask questions about any meeting
+• Document Q&A & full insights
+• Search across all your meetings`;
 
 const PRIORITY_COLORS = { HIGH: '#FF453A', MEDIUM: '#FF9F0A', LOW: '#30D158' };
 
-// ─── Markdown renderer ────────────────────────────────────────────────────────
-// Handles **bold**, *italic*, numbered lists, bullet lists
 
 const inlineMd = (str) =>
     str
@@ -93,7 +86,6 @@ const renderMarkdown = (text) => {
     return elements;
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 const WelcomeText = ({ text }) => (
     <div className="ca-welcome">
@@ -144,7 +136,7 @@ const MeetingDetail = ({ m, onNav }) => (
                 ))}
             </div>
         )}
-        <button className="ca-block-btn" onClick={() => onNav('/meeting')}>📅 Open Meetings Page →</button>
+        <button className="ca-block-btn" onClick={() => onNav('/meeting')}>Open Meetings Page →</button>
     </div>
 );
 
@@ -181,7 +173,7 @@ const TasksView = ({ data, onNav }) => (
         {(!data.pending?.length && !data.completed?.length) && (
             <div className="ca-empty">No tasks found 🎉</div>
         )}
-        <button className="ca-block-btn" onClick={() => onNav('/home')}>✅ Open Tasks Page →</button>
+        <button className="ca-block-btn" onClick={() => onNav('/home')}>Open Tasks Page →</button>
     </div>
 );
 
@@ -215,7 +207,7 @@ const TeamStatsView = ({ data, onNav }) => (
                 ))}
             </div>
         )}
-        <button className="ca-block-btn" onClick={() => onNav('/analytics')}>📊 View Full Analytics →</button>
+        <button className="ca-block-btn" onClick={() => onNav('/analytics')}>View Full Analytics →</button>
     </div>
 );
 
@@ -230,7 +222,7 @@ const MyStatsView = ({ data, onNav }) => (
         <div className="ca-focus-detail">
             {data.completedThisWeek} of {data.assignedThisWeek} tasks completed this week
         </div>
-        <button className="ca-block-btn" onClick={() => onNav('/analytics')}>📈 Open My Dashboard →</button>
+        <button className="ca-block-btn" onClick={() => onNav('/analytics')}>Open My Dashboard →</button>
     </div>
 );
 
@@ -239,7 +231,7 @@ const NavView = ({ navTarget, onNav }) => {
     return (
         <div className="ca-data-block">
             <button className="ca-block-btn nav-highlight" onClick={() => onNav(navTarget)}>
-                🚀 Take me to {labels[navTarget] || navTarget} →
+                Take me to {labels[navTarget] || navTarget} →
             </button>
         </div>
     );
@@ -247,7 +239,7 @@ const NavView = ({ navTarget, onNav }) => {
 
 const InsightView = ({ insight, fileName }) => (
     <div className="ca-insight-block">
-        <div className="ca-insight-file">📄 {fileName}</div>
+        <div className="ca-insight-file">{fileName}</div>
         {insight.summary && (
             <div className="ca-insight-section">
                 <div className="ca-section-label blue">Summary</div>
@@ -276,21 +268,20 @@ const InsightView = ({ insight, fileName }) => (
         )}
         {insight.risks?.length > 0 && (
             <div className="ca-insight-section">
-                <div className="ca-section-label orange">⚠️ Risks</div>
+                <div className="ca-section-label orange">Risks</div>
                 <ul>{insight.risks.map((r, i) => <li key={i}>{r}</li>)}</ul>
             </div>
         )}
     </div>
 );
 
-// ─── DocActionView ────────────────────────────────────────────────────────────
 
 const DocActionView = ({ fileName, onAsk, onInsights, frozen }) => {
     const [chosen, setChosen] = useState(null);
     const disabled = frozen || chosen !== null;
     return (
         <div className="ca-data-block">
-            <div className="ca-doc-attached">📄 <strong>{fileName}</strong></div>
+            <div className="ca-doc-attached"><strong>{fileName}</strong></div>
             <div className="ca-doc-opts">
                 <button
                     type="button"
@@ -298,7 +289,7 @@ const DocActionView = ({ fileName, onAsk, onInsights, frozen }) => {
                     disabled={disabled}
                     onClick={() => { setChosen('ask'); onAsk(); }}
                 >
-                    💬 Ask questions about this document
+                    Ask questions about this document
                 </button>
                 <button
                     type="button"
@@ -306,14 +297,12 @@ const DocActionView = ({ fileName, onAsk, onInsights, frozen }) => {
                     disabled={disabled}
                     onClick={() => { setChosen('insights'); onInsights(); }}
                 >
-                    🔍 Generate full insights on Meeting Page
+                    Generate full insights on Meeting Page
                 </button>
             </div>
         </div>
     );
 };
-
-// ─── InsightConfirmView ───────────────────────────────────────────────────────
 
 const InsightConfirmView = ({ fileName, onConfirm, onCancel, frozen }) => {
     const [done, setDone] = useState(false);
@@ -330,7 +319,7 @@ const InsightConfirmView = ({ fileName, onConfirm, onCancel, frozen }) => {
                     disabled={disabled}
                     onClick={() => { setDone(true); onConfirm(); }}
                 >
-                    ✅ Confirm — Open Meeting Page →
+                    Confirm — Open Meeting Page →
                 </button>
                 <button
                     type="button"
@@ -345,7 +334,6 @@ const InsightConfirmView = ({ fileName, onConfirm, onCancel, frozen }) => {
     );
 };
 
-// ─── MeetingPickerView ────────────────────────────────────────────────────────
 
 const MeetingPickerView = ({ meetings, onAction, frozen }) => {
     const [selected, setSelected] = useState([]);
@@ -400,7 +388,6 @@ const MeetingPickerView = ({ meetings, onAction, frozen }) => {
     );
 };
 
-// ─── Message Bubble ───────────────────────────────────────────────────────────
 
 const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
     const isUser = msg.role === 'user';
@@ -413,7 +400,7 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
                         ? msg.data.map(m => <MeetingCard key={m._id} m={m} onNav={onNav} />)
                         : <div className="ca-empty">No meetings found.</div>
                     }
-                    <button className="ca-block-btn" onClick={() => onNav('/meeting')}>📅 Open Meetings Page →</button>
+                    <button className="ca-block-btn" onClick={() => onNav('/meeting')}>Open Meetings Page →</button>
                 </div>
             );
         }
@@ -458,7 +445,7 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
             <div className={`ca-bubble ${isUser ? 'user-bubble' : 'bot-bubble'}`}>
                 {isUser ? (
                     msg.fileInfo
-                        ? <div className="ca-file-msg"><span>📄</span><span>{msg.fileInfo}</span></div>
+                        ? <div className="ca-file-msg"><span></span><span>{msg.fileInfo}</span></div>
                         : <span>{msg.content}</span>
                 ) : (
                     <>
@@ -474,7 +461,6 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
     );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 const ChatAgent = () => {
     const [open, setOpen] = useState(false);
@@ -493,11 +479,11 @@ const ChatAgent = () => {
         }
         return [{ role: 'assistant', content: WELCOME, type: 'text', isWelcome: true }];
     });
-    // Document Q&A state
-    const [docFile, setDocFile] = useState(null);   // raw File
-    const [docTextContent, setDocText] = useState('');     // extracted text for Q&A
-    // Meeting Q&A state
-    const [meetingQAContext, setMeetingQAContext] = useState(null); // array of meeting objects
+
+    const [docFile, setDocFile] = useState(null);
+    const [docTextContent, setDocText] = useState('');
+
+    const [meetingQAContext, setMeetingQAContext] = useState(null);
 
     const { setPendingFile, setPendingTitle } = usePendingFile();
     const { pendingMeetings, setPendingMeetings } = useChatMeeting();
@@ -510,23 +496,23 @@ const ChatAgent = () => {
     const userName = localStorage.getItem('userName') || '';
     const userRole = localStorage.getItem('userRole') || 'employee';
 
-    // Scroll only the messages container — never the page
+
     useEffect(() => {
         if (messagesRef.current) {
             messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
         }
-        // Sync to localStorage whenever messages change
+
         if (messages.length > 0) {
             localStorage.setItem('chat_history', JSON.stringify(messages));
         }
     }, [messages, loading]);
 
-    // Focus input when panel opens
+
     useEffect(() => {
         if (open) setTimeout(() => inputRef.current?.focus(), 350);
     }, [open]);
 
-    // Consume external meeting selection (multi-select from History / Meeting pages)
+
     useEffect(() => {
         if (!pendingMeetings?.length) return;
         const meetings = [...pendingMeetings];
@@ -537,11 +523,9 @@ const ChatAgent = () => {
             ? `Tell me about the meeting: "${meetings[0].title}"`
             : `Compare these meetings: ${meetings.map(m => `"${m.title}"`).join(', ')}`;
         setPendingAutoMsg(msg);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingMeetings]);
 
 
-    // Don't render on sign-in / sign-up pages
     if (!userName) return null;
 
     const handleNav = useCallback((path) => {
@@ -579,7 +563,7 @@ const ChatAgent = () => {
             const { reply, type, data, navTarget, insight, fileName } = res.data;
             const botMsg = { role: 'assistant', content: reply, type: type || 'text', data, navTarget, insight, fileName };
 
-            // Persist to localStorage (handled by useEffect)
+
             setMessages(prev => [...prev, botMsg]);
 
             if (type === 'nav' && navTarget) {
@@ -594,8 +578,6 @@ const ChatAgent = () => {
         }
     };
 
-    // Fire the auto-message once the panel is open (triggered by external meeting selection)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!pendingAutoMsg || !open) return;
         const t = setTimeout(() => {
@@ -607,7 +589,6 @@ const ChatAgent = () => {
 
     const handleHintClick = (hint) => {
         setOpen(true);
-        // Small delay so the panel animates in before the message is added
         setTimeout(() => sendMessage(hint.text), 160);
     };
 
@@ -624,14 +605,13 @@ const ChatAgent = () => {
         sendMessage(chip.text);
     };
 
-    // ── File attachment — show choices instead of auto-processing ──
     const handleFile = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         e.target.value = '';
 
         setDocFile(file);
-        // Show the 2-option prompt (no API call yet)
+
         pushMsg({
             role: 'assistant',
             content: `I've received **${file.name}**. What would you like to do?`,
@@ -640,12 +620,12 @@ const ChatAgent = () => {
         });
     };
 
-    // ── Action dispatcher for interactive message components ──
+
     const handleAction = async (action) => {
 
-        // ── Doc: Ask questions ──
+
         if (action.type === 'doc_action' && action.choice === 'ask') {
-            pushMsg({ role: 'user', content: '💬 Ask questions about this document', type: 'text' });
+            pushMsg({ role: 'user', content: 'Ask questions about this document', type: 'text' });
             setLoading(true);
             try {
                 const form = new FormData();
@@ -666,9 +646,9 @@ const ChatAgent = () => {
             }
         }
 
-        // ── Doc: Generate full insights on Meeting Page ──
+
         else if (action.type === 'doc_action' && action.choice === 'insights') {
-            pushMsg({ role: 'user', content: '🔍 Generate full insights on Meeting Page', type: 'text' });
+            pushMsg({ role: 'user', content: 'Generate full insights on Meeting Page', type: 'text' });
             pushMsg({
                 role: 'assistant',
                 content: '',
@@ -677,10 +657,10 @@ const ChatAgent = () => {
             });
         }
 
-        // ── Confirm redirect to Meeting Page ──
+
         else if (action.type === 'confirm_insights') {
             if (!docFile) return;
-            // Derive a friendly title from the filename
+
             const title = docFile.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
             setPendingFile(docFile);
             setPendingTitle(title);
@@ -688,12 +668,12 @@ const ChatAgent = () => {
             navigate('/meeting');
         }
 
-        // ── Cancel insights redirect ──
+
         else if (action.type === 'cancel_insights') {
             pushMsg({ role: 'assistant', content: 'No problem! Is there anything else I can help you with?', type: 'text' });
         }
 
-        // ── Meeting Q&A: user confirmed meeting selection ──
+
         else if (action.type === 'confirm_meetings') {
             const titles = action.meetings.map(m => m.title).join(', ');
             setMeetingQAContext(action.meetings);
@@ -729,13 +709,13 @@ const ChatAgent = () => {
 
     return (
         <>
-            {/* ── FAB + Hint Bubbles wrapper ── */}
+
             <div
                 className="ca-fab-wrapper"
                 onMouseEnter={() => setFabHovered(true)}
                 onMouseLeave={() => setFabHovered(false)}
             >
-                {/* Hint bubbles — only when chat is closed and FAB is hovered */}
+
                 {!open && fabHovered && (
                     <div className="ca-fab-hints" aria-hidden="true">
                         {FAB_HINTS.map((h, i) => (
@@ -746,7 +726,7 @@ const ChatAgent = () => {
                     </div>
                 )}
 
-                {/* Floating Action Button */}
+
                 <button
                     className={`ca-fab${open ? ' ca-fab-open' : ''}`}
                     onClick={() => setOpen(v => !v)}
@@ -761,18 +741,18 @@ const ChatAgent = () => {
                 </button>
             </div>
 
-            {/* ── Backdrop ── */}
+
             <div className={`ca-backdrop${open ? ' ca-backdrop-visible' : ''}`} onClick={() => setOpen(false)} />
 
-            {/* ── Slide-in Panel ── */}
+
             <div className={`ca-panel${open ? ' ca-panel-open' : ''}`} role="dialog" aria-label="FirstMeet AI Assistant">
 
-                {/* Header */}
+
                 <div className="ca-header">
                     <div className="ca-header-left">
                         <div className="ca-header-avatar">AI</div>
                         <div>
-                            <div className="ca-header-title">FirstMeet AI</div>
+                            <div className="ca-header-title">AI</div>
                             <div className="ca-header-sub">
                                 <span className="ca-online-dot" />
                                 Always on
@@ -793,7 +773,7 @@ const ChatAgent = () => {
                     </div>
                 </div>
 
-                {/* Quick Action Chips */}
+
                 <div className="ca-chips-row">
                     {CHIPS.map((chip, i) => (
                         <button key={i} className="ca-chip" onClick={() => handleChip(chip)}>
@@ -802,15 +782,15 @@ const ChatAgent = () => {
                     ))}
                 </div>
 
-                {/* Messages */}
+
                 <div className="ca-messages" ref={messagesRef}>
-                    {/* Q&A context banner */}
+
                     {(docTextContent || meetingQAContext) && (
                         <div className="ca-qa-banner">
                             <span>
                                 {docTextContent
-                                    ? '📄 Document Q&A active'
-                                    : `🗣️ Meeting Q&A: ${meetingQAContext.map(m => m.title).join(', ')}`
+                                    ? 'Document Q&A active'
+                                    : `Meeting Q&A: ${meetingQAContext.map(m => m.title).join(', ')}`
                                 }
                             </span>
                             <button
@@ -844,7 +824,7 @@ const ChatAgent = () => {
                     )}
                 </div>
 
-                {/* Input Area */}
+
                 <div className="ca-input-area">
                     <button
                         className="ca-icon-btn attach"
@@ -876,7 +856,7 @@ const ChatAgent = () => {
                     </button>
                 </div>
 
-                <div className="ca-input-hint">Enter to send · Shift+Enter for new line · 📎 attach docs</div>
+                <div className="ca-input-hint">Enter to send · Shift+Enter for new line · attach docs</div>
             </div>
 
             <input

@@ -1,33 +1,10 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-
-let PRIVATE_KEY = process.env.SIGNIN_PRIVATE_KEY || null;
-
-if (PRIVATE_KEY && !PRIVATE_KEY.includes('BEGIN PRIVATE KEY')) {
-    const cleanKey = PRIVATE_KEY.replace(/\\n/g, '\n').replace(/"/g, '').trim();
-    PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
-}
+const jwt = require("jsonwebtoken");
 
 const signIn = async (req, res) => {
-    let { userName, password } = req.body;
-
-    if (PRIVATE_KEY && password) {
-        try {
-            const buffer = Buffer.from(password, 'base64');
-            password = crypto.privateDecrypt(
-                {
-                    key: PRIVATE_KEY,
-                    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-                    oaepHash: 'sha256',
-                },
-                buffer
-            ).toString('utf8');
-        } catch (err) {
-            console.error('Error decrypting password:', err);
-            return res.status(400).json({ message: 'Invalid encrypted password' });
-        }
-    }
+    const { userName, password } = req.body;
 
     try {
         const user = await User.findOne({ userName });
@@ -42,9 +19,16 @@ const signIn = async (req, res) => {
             return res.status(400).json({ message: "Invalid password" });
         }
 
+        const token = jwt.sign(
+            { id: user._id, userName: user.userName, role: user.role },
+            process.env.JWT_SECRET || "yoursecretkeyforjwt12345",
+            { expiresIn: "10h" }
+        );
+
         res.json({
             success: true,
             message: "Signed in successfully",
+            token,
             userName: user.userName,
             role: user.role
         });
@@ -170,4 +154,17 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-module.exports = { signUp, signIn, getUserByUsername, updateUser, getAllUsers };
+const getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error("Get Me Error:", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+};
+
+module.exports = { signUp, signIn, getUserByUsername, updateUser, getAllUsers, getMe };

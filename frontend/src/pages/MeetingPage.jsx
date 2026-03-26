@@ -50,11 +50,10 @@ const MeetingPage = () => {
 
     // Fetch meeting history on mount
     useEffect(() => {
-        if (!userName) return;
-        api.get(`/api/meetings/${encodeURIComponent(userName)}`)
+        api.get(`/api/meetings/my`)
             .then(res => setMeetingHistory(res.data || []))
             .catch(() => { });
-    }, [userName]);
+    }, []);
 
     // Open a meeting and load its personal note
     const openMeeting = useCallback(async (meeting) => {
@@ -62,7 +61,7 @@ const MeetingPage = () => {
         setNotePreview(false);
         setNoteSaved(false);
         try {
-            const res = await api.get(`/api/meetings/${meeting._id}/notes?userName=${encodeURIComponent(userName)}`);
+            const res = await api.get(`/api/meetings/${meeting._id}/notes`);
             setNoteContent(res.data.content || '');
         } catch {
             setNoteContent('');
@@ -84,10 +83,10 @@ const MeetingPage = () => {
             if (!selectedMeeting) return;
             setNoteSaving(true);
             try {
-                await api.put(`/api/meetings/${selectedMeeting._id}/notes`, { userName, content: val });
+                await api.put(`/api/meetings/${selectedMeeting._id}/notes`, { content: val });
                 setNoteSaved(true);
                 // Refresh history to update hasNote flag
-                const res = await api.get(`/api/meetings/${encodeURIComponent(userName)}`);
+                const res = await api.get(`/api/meetings/my`);
                 setMeetingHistory(res.data || []);
             } catch { }
             setNoteSaving(false);
@@ -223,7 +222,6 @@ const MeetingPage = () => {
                     try {
                         const res = await api.post('/api/tasks', {
                             title: item.title,
-                            userName,
                             assignedTo: item.assignedTo || "",
                             assignedBy: item.assignedBy,
                             deadline: item.deadline,
@@ -243,13 +241,12 @@ const MeetingPage = () => {
                 try {
                     const savedMeeting = await api.post('/api/meetings', {
                         title: meetingTitle || "Untitled Meeting",
-                        userName,
                         summary: summaryText.trim(),
                         actionItems: finalItems,
                     });
                     setSavedMeetingId(savedMeeting.data._id);
                     // Refresh history list
-                    const histRes = await api.get(`/api/meetings/${encodeURIComponent(userName)}`);
+                    const histRes = await api.get(`/api/meetings/my`);
                     setMeetingHistory(histRes.data || []);
                 } catch (err) {
                     console.error("Failed to save meeting to history:", err);
@@ -333,7 +330,7 @@ const MeetingPage = () => {
                 </div>
 
                 {showResults && (
-                    <div className="results-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+                    <div className="results-container">
                         <div className="task-box glass-card" style={{ marginBottom: '2rem' }}>
                             <h3 style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem', marginBottom: '1.5rem', color: 'var(--accent-color)' }}>Summary</h3>
                             <div className="result-content" style={{ whiteSpace: 'pre-wrap', color: 'var(--text-main)', lineHeight: '1.6' }}>{summary}</div>

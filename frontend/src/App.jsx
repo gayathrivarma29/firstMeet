@@ -9,7 +9,6 @@ import CompletedTasksPage from './pages/CompletedTasksPage';
 import EmailPage from './pages/EmailPage';
 import DashboardPage from './pages/DashboardPage';
 import ChatAgent from './components/ChatAgent.jsx';
-import { ThemeProvider } from './context/ThemeContext';
 import { PendingFileProvider } from './context/PendingFileContext';
 import { ChatMeetingProvider } from './context/ChatMeetingContext';
 import './App.css';
@@ -62,15 +61,13 @@ function AnimatedRoutes() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <PendingFileProvider>
-        <ChatMeetingProvider>
-          <Router>
-            <AnimatedRoutes />
-          </Router>
-        </ChatMeetingProvider>
-      </PendingFileProvider>
-    </ThemeProvider>
+    <PendingFileProvider>
+      <ChatMeetingProvider>
+        <Router>
+          <AnimatedRoutes />
+        </Router>
+      </ChatMeetingProvider>
+    </PendingFileProvider>
   );
 }
 

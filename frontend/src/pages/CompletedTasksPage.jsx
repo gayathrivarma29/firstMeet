@@ -19,7 +19,7 @@ const CompletedTasksPage = () => {
                 return;
             }
             try {
-                const res = await api.get(`/api/tasks/completed/${userName}`);
+                const res = await api.get(`/api/tasks/my-completed`);
                 setCompletedTasks(res.data);
             } catch (error) {
                 console.error('Error fetching completed tasks:', error);

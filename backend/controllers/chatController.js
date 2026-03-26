@@ -7,7 +7,6 @@ const fs = require("fs");
 
 const client = new InferenceClient(process.env.HF_API_KEY);
 
-// ─── Intent Detection ─────────────────────────────────────────────────────────
 
 const detectIntent = (message) => {
     const m = message.toLowerCase().trim();
@@ -47,28 +46,26 @@ const detectIntent = (message) => {
     return "general";
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 const extractKeyword = (message) => {
     const stopWords = new Set(["find", "search", "look", "for", "locate", "meetings", "meeting", "about", "related", "to", "regarding", "on", "discussing", "show", "me", "a", "the", "of", "in", "at", "from", "that", "with", "is"]);
     return message.toLowerCase().split(/\s+/).filter(w => !stopWords.has(w)).join(" ").trim() || message;
 };
 
-// ─── CHAT MESSAGE ─────────────────────────────────────────────────────────────
 
 exports.chatMessage = async (req, res) => {
     try {
         const { message, userName, userRole, history = [], docContext, meetingContext } = req.body;
         if (!message || !userName) return res.status(400).json({ message: "message and userName required" });
 
-        // If user is in a Q&A context (doc or meeting), skip intent detection and answer directly
+     
         const intent = (docContext || meetingContext) ? "general" : detectIntent(message);
         let contextData = null;
         let contextText = "";
         let responseType = "text";
         let navTarget = null;
 
-        // ── Fetch data based on intent ──────────────────────────────────────
 
         if (intent === "my_meetings") {
             const meetings = await Meeting.find({ userName }).sort({ createdAt: -1 }).limit(10).lean();
@@ -207,9 +204,8 @@ exports.chatMessage = async (req, res) => {
             responseType = "meeting_picker";
         }
 
-        // ── Build Qwen messages ──────────────────────────────────────────────
 
-        // Inject Q&A context if the user is in doc or meeting Q&A mode
+
         let fullContext = contextText;
         if (docContext) {
             fullContext = `The user is asking questions about a document. Answer ONLY based on the document content below.\n\nDocument:\n${docContext.slice(0, 5000)}`;
@@ -244,7 +240,6 @@ exports.chatMessage = async (req, res) => {
     }
 };
 
-// ─── DOCUMENT ANALYSIS ────────────────────────────────────────────────────────
 
 exports.analyzeDocument = async (req, res) => {
     try {
@@ -301,7 +296,7 @@ exports.analyzeDocument = async (req, res) => {
     }
 };
 
-// ─── EXTRACT TEXT (for doc Q&A) ───────────────────────────────────────────────
+
 
 exports.extractText = async (req, res) => {
     try {

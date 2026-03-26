@@ -11,7 +11,8 @@ const meetingsRoute = require("./routes/meetingsRoute");
 const jiraRoutes = require("./routes/jiraRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
-const chatRoutes      = require("./routes/chatRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const authMiddleware = require("./utils/authMiddleware");
 
 connectDB();
 
@@ -45,12 +46,16 @@ app.post("/ask", upload.single("file"), analyzeMeeting);
 app.use(express.static(path.join(__dirname, "frontend", "dist")));
 
 app.use("/api/users", userRoutes);
+
+// Apply authMiddleware to all subsequent /api routes
+app.use("/api", authMiddleware);
+
 app.use("/api/tasks", taskRoutes);
 app.use("/api/meetings", meetingsRoute);
 app.use("/api/jira", jiraRoutes);
 app.use("/api/email", emailRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/chat",      chatRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.get("/*path", (req, res) => {
   res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"));

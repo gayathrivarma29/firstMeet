@@ -31,7 +31,7 @@ const EmailPage = () => {
             const userName = localStorage.getItem('userName');
             if (!userName) return;
             try {
-                const res = await api.get(`/api/tasks/assigned/${userName}`);
+                const res = await api.get(`/api/tasks/my-assigned`);
                 const filtered = res.data.filter(task =>
                     keywords.some(rx => rx.test(task.title))
                 );
@@ -96,16 +96,14 @@ const EmailPage = () => {
         }
 
 
-        const userName = localStorage.getItem('userName');
-        if (userName) {
-            try {
-                const res = await api.get(`/api/users/${userName}`);
-                if (res.data && res.data.email) {
-                    setCcEmail(res.data.email);
-                }
-            } catch (err) {
-                console.error("Error fetching current user email:", err);
+        // Fetch current user email via /me
+        try {
+            const res = await api.get(`/api/users/me`);
+            if (res.data && res.data.email) {
+                setCcEmail(res.data.email);
             }
+        } catch (err) {
+            console.error("Error fetching current user email:", err);
         }
     };
 

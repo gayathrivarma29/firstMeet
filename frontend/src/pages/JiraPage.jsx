@@ -19,8 +19,8 @@ const JiraPage = () => {
             if (!userName) return;
             try {
                 const [tasksRes, userRes] = await Promise.all([
-                    api.get(`/api/tasks/assigned/${userName}`),
-                    api.get(`/api/users/${userName}`)
+                    api.get(`/api/tasks/my-assigned`),
+                    api.get(`/api/users/me`)
                 ]);
                 setTasks(tasksRes.data);
                 setUserEmail(userRes.data.email);
