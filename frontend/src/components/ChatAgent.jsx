@@ -113,7 +113,9 @@ const MeetingCard = ({ m, onNav }) => (
                 </div>
             )}
         </div>
-        <button className="ca-pill-btn" onClick={() => onNav('/meeting')}>View →</button>
+        {localStorage.getItem('userRole') !== 'employee' && (
+            <button className="ca-pill-btn" onClick={() => onNav('/meeting')}>View →</button>
+        )}
     </div>
 );
 
@@ -136,7 +138,9 @@ const MeetingDetail = ({ m, onNav }) => (
                 ))}
             </div>
         )}
-        <button className="ca-block-btn" onClick={() => onNav('/meeting')}>Open Meetings Page →</button>
+        {localStorage.getItem('userRole') !== 'employee' && (
+            <button className="ca-block-btn" onClick={() => onNav('/meeting')}>Open Meetings Page →</button>
+        )}
     </div>
 );
 
@@ -291,14 +295,16 @@ const DocActionView = ({ fileName, onAsk, onInsights, frozen }) => {
                 >
                     Ask questions about this document
                 </button>
-                <button
-                    type="button"
-                    className={`ca-doc-opt insights${chosen === 'insights' ? ' chosen' : ''}`}
-                    disabled={disabled}
-                    onClick={() => { setChosen('insights'); onInsights(); }}
-                >
-                    Generate full insights on Meeting Page
-                </button>
+                {localStorage.getItem('userRole') !== 'employee' && (
+                    <button
+                        type="button"
+                        className={`ca-doc-opt insights${chosen === 'insights' ? ' chosen' : ''}`}
+                        disabled={disabled}
+                        onClick={() => { setChosen('insights'); onInsights(); }}
+                    >
+                        Generate full insights on Meeting Page
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -400,7 +406,9 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
                         ? msg.data.map(m => <MeetingCard key={m._id} m={m} onNav={onNav} />)
                         : <div className="ca-empty">No meetings found.</div>
                     }
-                    <button className="ca-block-btn" onClick={() => onNav('/meeting')}>Open Meetings Page →</button>
+                    {localStorage.getItem('userRole') !== 'employee' && (
+                        <button className="ca-block-btn" onClick={() => onNav('/meeting')}>Open Meetings Page →</button>
+                    )}
                 </div>
             );
         }
@@ -419,14 +427,17 @@ const MessageBubble = ({ msg, onNav, onAction, isLastMsg }) => {
                 onInsights={() => onAction({ type: 'doc_action', choice: 'insights', fileName: msg.docFileName })}
             />
         );
-        if (msg.type === 'insight_confirm') return (
-            <InsightConfirmView
-                fileName={msg.docFileName}
-                frozen={!isLastMsg}
-                onConfirm={() => onAction({ type: 'confirm_insights' })}
-                onCancel={() => onAction({ type: 'cancel_insights' })}
-            />
-        );
+        if (msg.type === 'insight_confirm') {
+            if (localStorage.getItem('userRole') === 'employee') return null;
+            return (
+                <InsightConfirmView
+                    fileName={msg.docFileName}
+                    frozen={!isLastMsg}
+                    onConfirm={() => onAction({ type: 'confirm_insights' })}
+                    onCancel={() => onAction({ type: 'cancel_insights' })}
+                />
+            );
+        }
         if (msg.type === 'meeting_picker' && msg.data) return (
             <MeetingPickerView
                 meetings={msg.data}
@@ -715,17 +726,18 @@ const ChatAgent = () => {
                 onMouseEnter={() => setFabHovered(true)}
                 onMouseLeave={() => setFabHovered(false)}
             >
-
                 {!open && fabHovered && (
                     <div className="ca-fab-hints" aria-hidden="true">
-                        {FAB_HINTS.map((h, i) => (
+                        {FAB_HINTS.filter(h => {
+                            if (userRole === 'employee' && h.label === 'My Meetings') return false;
+                            return true;
+                        }).map((h, i) => (
                             <button key={i} className="ca-fab-hint" onClick={() => handleHintClick(h)}>
                                 {h.label}
                             </button>
                         ))}
                     </div>
                 )}
-
 
                 <button
                     className={`ca-fab${open ? ' ca-fab-open' : ''}`}
@@ -739,7 +751,7 @@ const ChatAgent = () => {
                         <span className="ca-fab-badge">AI</span>
                     </>
                 </button>
-            </div>
+            </div >
 
 
             <div className={`ca-backdrop${open ? ' ca-backdrop-visible' : ''}`} onClick={() => setOpen(false)} />
@@ -775,7 +787,10 @@ const ChatAgent = () => {
 
 
                 <div className="ca-chips-row">
-                    {CHIPS.map((chip, i) => (
+                    {CHIPS.filter(c => {
+                        if (userRole === 'employee' && (c.label === 'My Meetings' || c.label === 'Meeting Q&A')) return false;
+                        return true;
+                    }).map((chip, i) => (
                         <button key={i} className="ca-chip" onClick={() => handleChip(chip)}>
                             {chip.label}
                         </button>

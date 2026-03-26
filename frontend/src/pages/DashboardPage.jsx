@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../api';
 import {
     BarChart, Bar, PieChart, Pie, Cell,
-    XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, AreaChart, Area,
-    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+    XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import MainLayout from '../components/MainLayout';
 import { getGreeting } from '../utils/greetings';
@@ -19,23 +18,7 @@ const C = {
     cyan: '#5AC8FA',
 };
 
-const FocusRing = ({ score }) => {
-    const radius = 52;
-    const circ = 2 * Math.PI * radius;
-    const offset = circ - (Math.min(score, 100) / 100) * circ;
-    const color = score >= 70 ? C.green : score >= 40 ? C.gold : C.rose;
-    return (
-        <svg width="130" height="130" viewBox="0 0 130 130" style={{ display: 'block', margin: '0.5rem auto 0' }}>
-            <circle cx="65" cy="65" r={radius} fill="none" stroke="var(--border-color)" strokeWidth="9" />
-            <circle cx="65" cy="65" r={radius} fill="none"
-                stroke={color} strokeWidth="9" strokeLinecap="round"
-                strokeDasharray={circ} strokeDashoffset={offset}
-                transform="rotate(-90 65 65)" />
-            <text x="65" y="61" textAnchor="middle" fontSize="24" fontWeight="600" fill="var(--text-main)">{score}</text>
-            <text x="65" y="77" textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--text-muted)" letterSpacing="0.08em">FOCUS %</text>
-        </svg>
-    );
-};
+
 
 function KpiCard({ label, value, suffix = '', color, badge }) {
     const num = typeof value === 'number' ? value : 0;
@@ -58,7 +41,6 @@ function KpiCard({ label, value, suffix = '', color, badge }) {
     );
 }
 
-// ─── Custom Recharts Tooltip ─────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     return (
@@ -83,27 +65,19 @@ const RANGES = [{ label: 'Last 7d', value: '7' }, { label: 'Last 30d', value: '3
 
 
 const computeTeamWins = (stats) => {
-    const completedThisWeek = stats.charts.teamVelocity?.at(-1)?.completed ?? 0;
     const rate = stats.kpis.completionRate ?? 0;
     const meetings = stats.kpis.totalMeetings ?? 0;
     const top = stats.charts.memberMatrix?.[0];
     const wins = [
         {
-            icon: '✅',
-            value: completedThisWeek,
-            label: 'Tasks Completed This Week',
-            message: completedThisWeek > 10 ? 'Incredible output — crushing it! ' : completedThisWeek > 0 ? 'Good momentum — keep going! 💪' : 'Every big sprint starts with one task.',
-            color: '#30D158',
-        },
-        {
-            icon: rate >= 70 ? '🔥' : rate >= 40 ? '📈' : '💪',
+            icon: rate >= 70 ? '' : rate >= 40 ? '' : '',
             value: `${rate}%`,
             label: 'Team Completion Rate',
             message: rate >= 70 ? 'Outstanding — team is firing on all cylinders!' : rate >= 40 ? 'Solid progress — almost there!' : 'Room to grow — keep pushing together!',
             color: rate >= 70 ? '#30D158' : rate >= 40 ? '#FF9F0A' : '#FF453A',
         },
         {
-            icon: '📅',
+            icon: '',
             value: meetings,
             label: 'Total Meetings Held',
             message: meetings > 5 ? 'Great team collaboration happening!' : meetings > 0 ? 'Good cadence — keep meeting up!' : 'Schedule your first meeting!',
@@ -122,33 +96,17 @@ const computeTeamWins = (stats) => {
 
 const computePersonalWins = (stats) => {
     const completedThisWeek = stats.kpis.completedThisWeek ?? 0;
-    const focusScore = stats.kpis.personalFocusScore ?? 0;
-    const streak = stats.kpis.streak ?? 0;
     const meetings = stats.kpis.meetingsAttended ?? 0;
     return [
         {
-            icon: '✅',
+            icon: '',
             value: completedThisWeek,
             label: 'Tasks Completed This Week',
             message: completedThisWeek > 5 ? "You're on fire — amazing productivity! " : completedThisWeek > 0 ? 'Great start — keep the momentum! 💪' : 'Today is a great day to start!',
             color: '#30D158',
         },
         {
-            icon: '🎯',
-            value: `${focusScore}%`,
-            label: 'Weekly Focus Score',
-            message: focusScore >= 80 ? 'Laser-focused — exceptional work!' : focusScore >= 50 ? 'Solid focus this week!' : "Stay sharp — you've got this!",
-            color: focusScore >= 70 ? '#30D158' : focusScore >= 40 ? '#FF9F0A' : '#FF453A',
-        },
-        {
-            icon: '🔥',
-            value: streak,
-            label: 'Active Days',
-            message: streak >= 5 ? 'Unstoppable consistency — wow!' : streak >= 3 ? 'Building great habits!' : 'Start your winning streak today!',
-            color: streak >= 3 ? '#FF9F0A' : '#0D99FF',
-        },
-        {
-            icon: '📅',
+            icon: '',
             value: meetings,
             label: 'Meetings Attended',
             message: meetings > 0 ? 'Well-engaged with your team!' : 'Connect with your team today!',
@@ -200,14 +158,13 @@ const StatsTicker = ({ stats, isTeam }) => {
     );
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────────
 const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
     const [range, setRange] = useState('all');
     const [digest, setDigest] = useState('');
     const [digestLoading, setDigestLoading] = useState(false);
-    const [viewMode, setViewMode] = useState('team'); // 'team' | 'personal'
+    const [viewMode, setViewMode] = useState('team');   
 
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName') || 'there';
@@ -216,7 +173,7 @@ const DashboardPage = () => {
 
     const fetchStats = useCallback(async () => {
         setLoading(true);
-        setStats(null); // clear stale data so guards prevent rendering wrong-shape charts
+        setStats(null);
         try {
             const usePersonal = !isAdmin || viewMode === 'personal';
             const endpoint = usePersonal
@@ -252,7 +209,7 @@ const DashboardPage = () => {
         <MainLayout>
             <div className="dashboard-container">
 
-                {/* ── Header + Range Control ── */}
+              
                 <header className="dashboard-header">
                     <div className="dashboard-header-row">
                         <div>
@@ -291,7 +248,7 @@ const DashboardPage = () => {
                     </div>
                 </header>
 
-                {/* ── AI Weekly Digest (Admin team view only) ── */}
+    
                 {isAdmin && viewMode === 'team' && (
                     <div className="digest-card">
                         <div className="digest-left">
@@ -313,35 +270,27 @@ const DashboardPage = () => {
                     </div>
                 )}
 
-                {/* ── KPI Row ── */}
+                
                 <div className="kpi-row">
                     {isAdmin && viewMode === 'team' ? (
                         <>
                             <KpiCard label="Total Meetings" value={stats.kpis.totalMeetings} />
-                            {/* <KpiCard label="Success Score" value={stats.kpis.effectivenessScore} suffix="/100" color={C.blue} /> */}
-                            {/* <KpiCard label="Team Balance" value={stats.kpis.globalFocusScore} suffix="%" color={C.gold} /> */}
                             <KpiCard label="Completion Rate" value={stats.kpis.completionRate} suffix="%" color={C.green} />
                             <KpiCard label="Monthly Growth" value={Math.abs(stats.kpis.monthlyGrowth)} suffix="%" color={stats.kpis.monthlyGrowth >= 0 ? C.cyan : C.rose} badge={stats.kpis.monthlyGrowth} />
                         </>
                     ) : (
                         <>
                             <KpiCard label="Pending Tasks" value={stats.kpis.openTasks} />
-                            {/* <KpiCard label="Day Streak" value={stats.kpis.streak} suffix=" days" color={C.gold} /> */}
                             <KpiCard label="Completion Rate" value={stats.kpis.completedRatio} suffix="%" color={C.green} />
-                            {/* <KpiCard label="Points Earned" value={stats.kpis.personalImpact} color={C.blue} /> */}
                             <KpiCard label="Meetings" value={stats.kpis.meetingsAttended || 0} color={C.purple} />
                         </>
                     )}
                 </div>
 
-                {/* ── Stats Ticker ──
-                <StatsTicker stats={stats} isTeam={isAdmin && viewMode === 'team'} /> */}
-
-                {/* ── Charts Grid ── */}
                 <div className="dashboard-grid">
                     {isAdmin && viewMode === 'team' ? (
                         <>
-                            {/* Tasks Activity */}
+                         
                             <div className="chart-card">
                                 <h3>Tasks Activity</h3>
                                 <ResponsiveContainer width="100%" height={260}>
@@ -365,7 +314,7 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Team Performance */}
+                         
                             <div className="chart-card">
                                 <h3>Team Performance</h3>
                                 <div className="matrix-table-container">
@@ -396,7 +345,7 @@ const DashboardPage = () => {
                                 </div>
                             </div>
 
-                            {/* Priority Distribution */}
+                     
                             <div className="chart-card">
                                 <h3>Priority Distribution</h3>
                                 <ResponsiveContainer width="100%" height={260}>
@@ -412,26 +361,9 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Team Velocity
-                            <div className="chart-card">
-                                <h3>Team Velocity</h3>
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <AreaChart data={stats.charts.teamVelocity || []}>
-                                        <defs>
-                                            <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={C.purple} stopOpacity={0.15} />
-                                                <stop offset="95%" stopColor={C.purple} stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <XAxis dataKey="week" tick={axisStyle} tickLine={false} axisLine={false} />
-                                        <YAxis hide />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Area type="monotone" name="Completed" dataKey="completed" stroke={C.purple} strokeWidth={2.5} fill="url(#gv)" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div> */}
 
-                            {/* Stale Tasks */}
+
+                        
                             <div className="chart-card">
                                 <h3>Pending Tasks</h3>
                                 <ResponsiveContainer width="100%" height={260}>
@@ -448,22 +380,10 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Action Item Load
-                            <div className="chart-card">
-                                <h3>Action Item Load</h3>
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <BarChart data={stats.charts.actionItemAssignees || []} layout="vertical">
-                                        <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" tick={{ ...axisStyle, fontSize: 9 }} tickLine={false} axisLine={false} width={88} />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-subtle)' }} />
-                                        <Bar dataKey="assigned" name="Assigned" fill={C.blue} radius={[0, 4, 4, 0]} barSize={9} />
-                                        <Bar dataKey="completed" name="Completed" fill={C.green} radius={[0, 4, 4, 0]} barSize={9} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div> */}
 
 
-                            {/* Meeting Frequency */}
+
+                        
                             <div className="chart-card">
                                 <h3>Meeting Frequency</h3>
                                 <ResponsiveContainer width="100%" height={240}>
@@ -476,7 +396,7 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Jira vs Local */}
+                        
                             <div className="chart-card">
                                 <h3>Jira vs Local Tasks</h3>
                                 <ResponsiveContainer width="100%" height={240}>
@@ -490,9 +410,9 @@ const DashboardPage = () => {
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
-                            {/* Urgent Tasks */}
+                   
                             <div className="chart-card full-width">
-                                <h3>🔴 Urgent Tasks</h3>
+                                <h3>Urgent Tasks</h3>
                                 <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
                                     {(stats.charts.urgentTasks || []).length > 0
                                         ? (stats.charts.urgentTasks || []).map(task => (
@@ -514,30 +434,6 @@ const DashboardPage = () => {
                         </>
                     ) : (
                         <>
-                            {/* Focus Ring
-                            <div className="chart-card" style={{ alignItems: 'center' }}>
-                                <h3>Weekly Focus Score</h3>
-                                <FocusRing score={stats.kpis.personalFocusScore || 0} />
-                                <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
-                                    {stats.kpis.completedThisWeek || 0} of {stats.kpis.assignedThisWeek || 0} tasks completed this week
-                                </p>
-                            </div> */}
-
-                            {/* Work Skills Radar
-                            <div className="chart-card">
-                                <h3>Work Skills</h3>
-                                <ResponsiveContainer width="100%" height={280}>
-                                    <RadarChart data={stats.charts.priorityMatrix || []}>
-                                        <PolarGrid stroke="var(--border-color)" />
-                                        <PolarAngleAxis dataKey="subject" tick={axisStyle} />
-                                        <PolarRadiusAxis angle={30} domain={[0, 10]} hide />
-                                        <Radar name="Performance" dataKey="A" stroke={C.blue} fill={C.blue} fillOpacity={0.25} />
-                                        <Tooltip content={<CustomTooltip />} />
-                                    </RadarChart>
-                                </ResponsiveContainer>
-                            </div> */}
-
-                            {/* Weekly Work */}
                             <div className="chart-card">
                                 <h3>Weekly Work</h3>
                                 <ResponsiveContainer width="100%" height={280}>
@@ -549,25 +445,7 @@ const DashboardPage = () => {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
-
-                            {/* Priority Mix
-                            <div className="chart-card">
-                                <h3>Priority Mix</h3>
-                                <ResponsiveContainer width="100%" height={260}>
-                                    <PieChart>
-                                        <Pie data={stats.charts.priorityDistribution || []} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
-                                            <Cell fill={C.rose} />
-                                            <Cell fill={C.gold} />
-                                            <Cell fill={C.green} />
-                                        </Pie>
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Inter' }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div> */}
-
-
-                            {/* 7-Day Throughput */}
+                          
                             <div className="chart-card">
                                 <h3>7-Day Throughput</h3>
                                 <ResponsiveContainer width="100%" height={240}>
@@ -586,7 +464,7 @@ const DashboardPage = () => {
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Meeting History */}
+                       
                             <div className="chart-card">
                                 <h3>My Meetings</h3>
                                 <div className="meeting-history-list">
@@ -597,16 +475,16 @@ const DashboardPage = () => {
                                                     <div className="urgent-task-title">{m.title}</div>
                                                     <div className="urgent-task-meta">{m.actionItemsCount} action items · {new Date(m.createdAt).toLocaleDateString()}</div>
                                                 </div>
-                                                {m.hasNote && <span className="note-badge" title="Has your notes">📝</span>}
+                                                {m.hasNote && <span className="note-badge" title="Has your notes"></span>}
                                             </div>
                                         ))
                                         : <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No meetings recorded yet.</p>
                                     }
                                 </div>
                             </div>
-                            {/* Upcoming Tasks */}
+                        
                             <div className="chart-card full-width">
-                                <h3>📅 Upcoming Tasks</h3>
+                                <h3>Upcoming Tasks</h3>
                                 <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
                                     {(stats.charts.upcomingDeadlines || []).length > 0
                                         ? (stats.charts.upcomingDeadlines || []).map(task => (

@@ -87,11 +87,6 @@ exports.getAdminStats = async (req, res) => {
             };
         }).sort((a, b) => b.ratio - a.ratio);
 
-        // 5. Real globalFocusScore — % of members hitting ≥70% completion ratio
-        const globalFocusScore = memberMatrix.length > 0
-            ? Math.round((memberMatrix.filter(m => m.ratio >= 70).length / memberMatrix.length) * 100)
-            : 0;
-
         // 6. Real monthlyGrowth — meetings this month vs last month
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -105,12 +100,6 @@ exports.getAdminStats = async (req, res) => {
         const monthlyGrowth = lastMonthCount > 0
             ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100)
             : thisMonthCount > 0 ? 100 : 0;
-
-        // 7. Effectiveness Score
-        const resolutionRatio = allTasksFull.length > 0
-            ? allTasksFull.filter(t => t.isCompleted).length / allTasksFull.length
-            : 0;
-        const effectivenessScore = Math.round((resolutionRatio * 70) + (Math.min(allMeetings.length, 100) * 0.3));
 
         // 8. Meeting frequency by week (last 8 weeks)
         const meetingsByWeek = Array.from({ length: 8 }, (_, i) => {
@@ -127,21 +116,7 @@ exports.getAdminStats = async (req, res) => {
             };
         });
 
-        // 9. Team Velocity — completed tasks per week, last 8 weeks
-        const teamVelocity = Array.from({ length: 8 }, (_, i) => {
-            const weeksAgo = 7 - i;
-            const weekStart = getWeekStart(weeksAgo);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 7);
-            return {
-                week: weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-                completed: allTasksFull.filter(t => {
-                    if (!t.isCompleted) return false;
-                    const d = new Date(t.updatedAt);
-                    return d >= weekStart && d < weekEnd;
-                }).length,
-            };
-        });
+        // 10. Stale Tasks — open tasks by age (pure createdAt math, no deadline parsing)
 
         // 10. Stale Tasks — open tasks by age (pure createdAt math, no deadline parsing)
         const staleNow = new Date();
@@ -156,21 +131,7 @@ exports.getAdminStats = async (req, res) => {
             { label: ">30 days", count: over30 },
         ];
 
-        // 11. Action Item Assignee Breakdown — flatten meeting actionItems, cross-ref tasks
-        const assigneeCounts = {};
-        allMeetings.forEach(meeting => {
-            (meeting.actionItems || []).forEach(item => {
-                const name = item.assignedTo || "Unassigned";
-                if (!assigneeCounts[name]) assigneeCounts[name] = { assigned: 0, completed: 0 };
-                assigneeCounts[name].assigned++;
-                const match = allTasksFull.find(t => t.title === item.title || t.title === item.task);
-                if (match && match.isCompleted) assigneeCounts[name].completed++;
-            });
-        });
-        const actionItemAssignees = Object.entries(assigneeCounts)
-            .map(([name, c]) => ({ name, assigned: c.assigned, completed: c.completed }))
-            .sort((a, b) => b.assigned - a.assigned)
-            .slice(0, 7);
+        // 12. Overdue Tasks (fuzzy deadline parser)
 
         // 12. Overdue Tasks (fuzzy deadline parser)
         const today = new Date();
@@ -186,8 +147,6 @@ exports.getAdminStats = async (req, res) => {
                 totalMeetings,
                 completionRate: calculateCompletionRate(allTasks),
                 monthlyGrowth,
-                effectivenessScore,
-                globalFocusScore,
             },
             charts: {
                 lifecycle,
@@ -195,9 +154,7 @@ exports.getAdminStats = async (req, res) => {
                 priorityDistribution,
                 memberMatrix,
                 meetingsByWeek,
-                teamVelocity,
                 staleTaskBuckets,
-                actionItemAssignees,
                 workloadBalance: memberMatrix.slice(0, 5).map(m => ({ name: m.name, pending: m.pending })),
                 jiraVsLocal: [
                     { name: "Jira", value: allTasksFull.filter(t => t.jiraId).length },
@@ -232,15 +189,7 @@ exports.getEmployeeStats = async (req, res) => {
         const completedTasks = myTasks.filter(t => t.isCompleted);
         const myMeetings = await Meeting.find({ userName });
 
-        // Personal Focus Score: completed this week / assigned this week
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-        const assignedThisWeek = allMyTasks.filter(t => new Date(t.createdAt) >= weekStart).length;
-        const completedThisWeek = allMyTasks.filter(t => t.isCompleted && new Date(t.updatedAt) >= weekStart).length;
-        const personalFocusScore = assignedThisWeek > 0
-            ? Math.round((completedThisWeek / assignedThisWeek) * 100)
-            : completedThisWeek > 0 ? 100 : 0;
+        // 1. Productivity by Day
 
         // 1. Productivity by Day
         const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -249,14 +198,7 @@ exports.getEmployeeStats = async (req, res) => {
             count: completedTasks.filter(t => new Date(t.updatedAt).getDay() === index).length,
         }));
 
-        // 2. Efficiency Radar
-        const priorityMatrix = [
-            { subject: "High Impact", A: myTasks.filter(t => t.priority === "HIGH").length, fullMark: 10 },
-            { subject: "Consistency", A: new Set(completedTasks.map(t => t.updatedAt.toISOString().split("T")[0])).size, fullMark: 10 },
-            { subject: "Speed", A: myTasks.length > 0 ? Math.round(calculateCompletionRate(myTasks) / 10) : 0, fullMark: 10 },
-            { subject: "Volume", A: completedTasks.length, fullMark: 10 },
-            { subject: "Involvement", A: myMeetings.length, fullMark: 10 },
-        ];
+        // 3. 7-day Throughput
 
         // 3. 7-day Throughput
         const recentDates = getRecentDays(7);
@@ -265,12 +207,7 @@ exports.getEmployeeStats = async (req, res) => {
             count: completedTasks.filter(t => t.updatedAt.toISOString().split("T")[0] === date).length,
         }));
 
-        // 4. Priority Distribution
-        const priorityDistribution = [
-            { name: "HIGH", value: myTasks.filter(t => t.priority === "HIGH").length },
-            { name: "MEDIUM", value: myTasks.filter(t => t.priority === "MEDIUM").length },
-            { name: "LOW", value: myTasks.filter(t => t.priority === "LOW").length },
-        ];
+        // 5. Meeting history with notes flag
 
         // 5. Meeting history with notes flag
         const meetingsWithNotes = myMeetings.map(m => ({
@@ -286,18 +223,13 @@ exports.getEmployeeStats = async (req, res) => {
             kpis: {
                 openTasks: myTasks.filter(t => !t.isCompleted).length,
                 completedRatio: calculateCompletionRate(myTasks),
-                streak: new Set(completedTasks.map(t => t.updatedAt.toISOString().split("T")[0])).size,
-                personalImpact: Math.round((completedTasks.length * 10) + (myMeetings.length * 5)),
                 meetingsAttended: myMeetings.length,
-                personalFocusScore,
                 completedThisWeek,
                 assignedThisWeek,
             },
             charts: {
                 productivityByDay,
-                priorityDistribution,
                 pendingCount: myTasks.filter(t => !t.isCompleted).length,
-                priorityMatrix,
                 throughput,
                 upcomingDeadlines: myTasks.filter(t => !t.isCompleted && t.deadline).slice(0, 5),
                 meetingsWithNotes,

@@ -59,7 +59,7 @@ exports.chatMessage = async (req, res) => {
         const { message, userName, userRole, history = [], docContext, meetingContext } = req.body;
         if (!message || !userName) return res.status(400).json({ message: "message and userName required" });
 
-     
+
         const intent = (docContext || meetingContext) ? "general" : detectIntent(message);
         let contextData = null;
         let contextText = "";
@@ -68,6 +68,9 @@ exports.chatMessage = async (req, res) => {
 
 
         if (intent === "my_meetings") {
+            if (userRole === "employee") {
+                return res.json({ reply: "Access to the detailed meetings page is restricted. Please contact your administrator if you need to view historical meeting records.", type: "text" });
+            }
             const meetings = await Meeting.find({ userName }).sort({ createdAt: -1 }).limit(10).lean();
             contextData = meetings.map(m => ({
                 _id: m._id,
@@ -82,6 +85,9 @@ exports.chatMessage = async (req, res) => {
         }
 
         else if (intent === "meeting_detail") {
+            if (userRole === "employee") {
+                return res.json({ reply: "Meeting details are restricted in the chat for employees. You can still ask about your tasks and analytics!", type: "text" });
+            }
             const nameMatch = message.match(/(?:about|in|for|of|from)\s+[""']?([^""'?.!]+)[""']?/i);
             const keyword = nameMatch ? nameMatch[1].trim() : extractKeyword(message);
             const regex = new RegExp(keyword.split(" ").join("|"), "i");
@@ -162,6 +168,9 @@ exports.chatMessage = async (req, res) => {
         }
 
         else if (intent === "search_meetings") {
+            if (userRole === "employee") {
+                return res.json({ reply: "Meeting search is only available to administrators.", type: "text" });
+            }
             const keyword = extractKeyword(message);
             const regex = new RegExp(keyword.split(" ").join("|"), "i");
             const query = userRole === "admin"
@@ -184,8 +193,14 @@ exports.chatMessage = async (req, res) => {
         else if (intent === "navigate") {
             const m = message.toLowerCase();
             if (/analytics?|dashboard/.test(m)) navTarget = "/analytics";
-            else if (/new meeting|create meeting/.test(m)) navTarget = "/meeting";
-            else if (/meeting/.test(m)) navTarget = "/meeting";
+            else if (/new meeting|create meeting/.test(m)) {
+                if (userRole === "employee") return res.json({ reply: "You don't have permission to access the meetings page.", type: "text" });
+                navTarget = "/meeting";
+            }
+            else if (/meeting/.test(m)) {
+                if (userRole === "employee") return res.json({ reply: "You don't have permission to access the meetings page.", type: "text" });
+                navTarget = "/meeting";
+            }
             else if (/completed/.test(m)) navTarget = "/completed";
             else if (/email/.test(m)) navTarget = "/email";
             else if (/jira/.test(m)) navTarget = "/jira";
@@ -195,6 +210,9 @@ exports.chatMessage = async (req, res) => {
         }
 
         else if (intent === "meeting_qa_select") {
+            if (userRole === "employee") {
+                return res.json({ reply: "Meeting Q&A is currently restricted for your account level.", type: "text" });
+            }
             const meetings = await Meeting.find({ userName })
                 .sort({ createdAt: -1 })
                 .select({ title: 1, summary: 1, actionItems: 1, createdAt: 1 })
